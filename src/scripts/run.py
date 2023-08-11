@@ -21,28 +21,6 @@ def main():
     client = BinanceClient(api_key=api_key, api_secret=api_secret, testnet=True)
     strategy = RandomStrategy()
 
-    try:
-        while True:
-            current_datetime: dt.datetime = dt.datetime.now()
-            hour_ago: dt.datetime = current_datetime - dt.timedelta(hours=1)
-
-            data: pd.DataFrame = client.load(start=hour_ago, end=current_datetime)
-            action: Action = strategy.action(data)
-
-            if action == Action.LONG:
-                client.set_using_part(0.5)
-            elif action == Action.SHORT:
-                client.set_using_part(0)
-            elif action == Action.NONE:
-                client.set_using_part(0)
-
-            logging.info(client.balance())
-            # time.sleep(1)
-
-    except Exception as e:
-        logging.error(e)
-        client.set_using_part(0)
-
 
 if __name__ == "__main__":
     main()

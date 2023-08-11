@@ -3,23 +3,30 @@ import logging
 import datetime as dt
 import pandas as pd
 import time
-from matplotlib import pyplot as plt
+import tqdm
+import matplotlib.pyplot as plt
 
 from src.clients.binance_client import BinanceClient
 from src.clients.backtester_client import BacktesterClient
+from src.strategies import Combination
 from src.strategies.random_strategy import RandomStrategy
 from src.strategies.manual_strategy import ManualStrategy
 from src.strategies.mae_strategy import MAEStrategy
-from src.strategies import Action
+from src.strategies.reversals_strategy import ReversalsStrategy
+from . import Runner
 
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
 
-INTERVAL = "30m"
-DAYS = 30
-STRATEGY = MAEStrategy(0)
+INTERVAL_MINUTES = 1
+INTERVAL = f"{INTERVAL_MINUTES}m"
+
+WINDOW_SIZE = 30
+
+DAYS = 365
+STEP = 30
 # strategy = RandomStrategy()
 # strategy = MAEStrategy()
 # strategy = MAEStrategy()
@@ -28,43 +35,40 @@ STRATEGY = MAEStrategy(0)
 def main():
     api_key = os.environ["BINANCE_API_KEY"]
     api_secret = os.environ["BINANCE_SECRET_KEY"]
+    # logging.info(api_key)
+    # logging.info(api_secret)
 
     binance_client = BinanceClient(
-        api_key=api_key, api_secret=api_secret, interval=INTERVAL, testnet=True
+        api_key=api_key, api_secret=api_secret, interval=INTERVAL, testnet=False
     )
 
-    end: dt.datetime = dt.datetime.now()
-    start: dt.datetime = end - dt.timedelta(days=DAYS)
+    current: dt.datetime = dt.datetime.now()
+    frames = []
+    for i in tqdm.tqdm(range(0, DAYS, STEP)):
+        start: dt.datetime = current - dt.timedelta(days=DAYS - i)
+        end: dt.datetime = current - dt.timedelta(days=DAYS - i - STEP)
+        frame = binance_client.load(start=start, end=end)
+        # logging.info(f"FRAME SHAPE {frame.shape}")
+        frames.append(frame)
 
-    data = binance_client.load(start=start, end=end)
-    logging.info(f"DATA SHAPE {data.shape}")
-    client = BacktesterClient(data, interval=INTERVAL)
+    data = pd.concat(frames)
+    Runner._save_graph(indices=data.time, values=data.close, filename="BTC.png")
+    print(data.shape)
+    # logging.info(f"DATA SHAPE {data.shape}")
 
-    balance = []
-    index = []
-    while client.next():
-        current_datetime: dt.datetime = client.time()
-        ago: dt.datetime = current_datetime - dt.timedelta(hours=24)
-
-        data: pd.DataFrame = client.load(start=ago, end=current_datetime)
-        action: Action = STRATEGY.action(data)
-
-        if action == Action.LONG:
-            client.set_using_part(0.5)
-        elif action == Action.SHORT:
-            client.set_using_part(-0.5)
-        elif action == Action.NONE:
-            client.set_using_part(0)
-        else:
-            pass  # DO NOTHING
-
-        index.append(current_datetime)
-        balance.append(client.balance()["sum"])
-
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 5))  # create figure & 1 axis
-    ax.plot(index, balance)
-    fig.savefig("tmp.png")  # save the figure to file
-    plt.close(fig)
+    for strategy in [
+        Combination((ReversalsStrategy(), MAEStrategy())),
+        ReversalsStrategy(),
+        MAEStrategy(),
+        RandomStrategy(),
+    ]:
+        client = BacktesterClient(data, interval=INTERVAL)
+        Runner(
+            client=client,
+            strategy=strategy,
+            window=dt.timedelta(minutes=INTERVAL_MINUTES * WINDOW_SIZE),
+            graph_filename=f"{strategy.__class__.__name__}.png",
+        ).run()
 
 
 if __name__ == "__main__":

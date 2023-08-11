@@ -18,6 +18,7 @@ class BinanceClient(AbstractClient):
         using: str = "BTC",
         interval: str = "1m",
         testnet: bool = True,
+        stop: float = 0.01,
     ):
         self.using = using
         self.target = target
@@ -26,6 +27,7 @@ class BinanceClient(AbstractClient):
         self.api_key = api_key
         self.api_secret = api_secret
         self.client = Client(api_key, api_secret, testnet=testnet)
+        self.stop = stop
 
         symbol_info = self.client.get_symbol_info(self.symbol)
         # logging.info(symbol_info)
@@ -38,13 +40,17 @@ class BinanceClient(AbstractClient):
 
     def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
         try:
+            start_str: str = start.strftime("%Y-%m-%d %H:%M:%S")
+            end_str: str = end.strftime("%Y-%m-%d %H:%M:%S")
             bars = self.client.get_historical_klines(
                 self.symbol,
                 self.interval,
-                start.strftime("%Y-%m-%d %H:%M:%S"),
-                end.strftime("%Y-%m-%d %H:%M:%S"),
-                limit=10000,
+                start_str,
+                end_str,
             )
+            # logging.info(start_str)
+            # logging.info(end_str)
+            # logging.info(bars)
         except BinanceAPIException as e:
             logging.error(f"Ошибка получения данных: {e}")
             return None
@@ -73,7 +79,8 @@ class BinanceClient(AbstractClient):
                 )
             elif quantity > 0:
                 order = self.client.order_market_buy(
-                    symbol=self.symbol, quantity=f"{+quantity:0.{self.precision}f}"
+                    symbol=self.symbol,
+                    quantity=f"{+quantity:0.{self.precision}f}",
                 )
         except BinanceAPIException as e:
             logging.error(f"Ошибка при открытии позиции: {e}")
