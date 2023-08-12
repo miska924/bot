@@ -30,20 +30,25 @@ class BacktesterClient(AbstractClient):
         self.max_notional = 9000000
 
         self.comission = 0.0001
-        self.stops = [-0.001, 0.005]
+        self.up_stops = set()
+        self.bottom_stops = set()
+        self.position = False
 
         self.price_iteration = 0
         self.last_price = self._price()
 
-    def check_stop(self):
+    def check_stops(self):
         # return
         for i in range(PRICE_ITERATIONS):
-            super().check_stop()
+            super().check_stops()
             self.price_iteration = i
         self.price_iteration = 0
 
+    def current(self) -> dict:
+        return self.data.iloc[self.index]
+
     def next(self) -> bool:
-        self.check_stop()
+        self.check_stops()
         self.index += 1
         # logging.info(self.data.shape)
         return self.index < self.data.shape[0] and self.balance()["sum"] > 0

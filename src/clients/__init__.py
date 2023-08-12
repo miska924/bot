@@ -22,29 +22,24 @@ class AbstractClient:
     def _order(self, quantity: str):
         raise NotImplementedError()
 
+    def current(self):
+        raise NotImplementedError
+
     def set_using_part(self, using_part: float):
+        self.position = using_part != 0
+        # print(self.in_position())
         price = self._price()
-        # logging.info(f"PRICE {price}")
         balance = self.balance()
-        # logging.info(f"BALANCE {balance}")
 
         amount = balance["sum"] * using_part - balance[self.using] * price
-
         quantity = float(amount / price)
-        # logging.info(quantity)
 
         if abs(quantity * price) < self.min_notional:
-            # if using_part != 0:
-            #     print(abs(quantity * price))
             return
         if abs(quantity * price) > self.max_notional:
-            # logging.info("HELLO")
             quantity = sign(quantity) * self.max_notional / price
 
-        # logging.info(quantity)
-        # logging.info(self.min_qty)
         parts = quantity / self.min_qty
-        # logging.info(parts)
         parts = int(math.ceil(parts) if parts < 0 else math.floor(parts))
         quantity = float(parts * self.min_qty)
 
@@ -53,50 +48,31 @@ class AbstractClient:
         )
         self.last_price = price
 
-    def check_stop(self):
-        balance = self.balance()
+    def in_position(self):
+        return self.position
+
+    def set_up_stops(self, stops: list):
+        for stop in stops:
+            self.up_stops.add(stop)
+
+    def set_bottom_stops(self, stops: list):
+        for stop in stops:
+            self.bottom_stops.add(stop)
+
+    def check_stops(self):
         price = self._price()
 
-        for stop in self.stops:
-            if (
-                (balance[self.using] < 0 and price < self.last_price)
-                or (balance[self.using] > 0 and price > self.last_price)
-            ) and stop > 0:
-                if abs(price - self.last_price) > abs(stop):
-                    self.set_using_part(0)
-            elif (
-                (balance[self.using] < 0 and price > self.last_price)
-                or (balance[self.using] > 0 and price < self.last_price)
-            ) and stop < 0:
-                if abs(price - self.last_price) > abs(stop):
-                    self.set_using_part(0)
+        for stop in self.up_stops:
+            if price > stop:
+                self.set_using_part(0)
+                self.up_stops = set()
+                self.bottom_stops = set()
 
-            # if stop > 0:
-            #     if (
-            #         balance[self.using] < 0 and price < self.last_price * (1.0 - stop)
-            #     ) or (
-            #         balance[self.using] > 0 and price > self.last_price * (1.0 + stop)
-            #     ):
-            #         self.set_using_part(0)
-            # else:
-            #     if (
-            #         balance[self.using] < 0 and price > self.last_price * (1.0 + stop)
-            #     ) or (
-            #         balance[self.using] > 0 and price < self.last_price * (1.0 - stop)
-            #     ):
-            #         self.set_using_part(0)
-
-            # if (
-            #     stop < 0
-            #     and balance[self.using] > 0
-            #     and price < self.last_price * (1.0 + stop)
-            # ) or (
-            #     stop > 0
-            #     and balance[self.using] < 0
-            #     and price > self.last_price * (1.0 + stop)
-            # ):
-            #     # logging.info(f"STOP ORDER {balance[self.using]}")
-            #     self.set_using_part(0)
+        for stop in self.bottom_stops:
+            if price < stop:
+                self.set_using_part(0)
+                self.up_stops = set()
+                self.bottom_stops = set()
 
     def _asset_balance(self, asset: str) -> float:
         raise NotImplementedError()
@@ -112,7 +88,7 @@ class AbstractClient:
         }
 
     def next(self) -> bool:
-        self.check_stop()
+        self.check_stops()
 
         return True
 

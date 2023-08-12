@@ -10,7 +10,7 @@ class ReversalsStrategy(AbstractStrategy):
         self.reaction = reaction
         self.window = window
 
-    def action(self, data: pd.DataFrame) -> Action:
+    def action(self, data: pd.DataFrame, position: bool) -> Action:
         if data.shape[0] < 10:
             return None
         if self.ttl:

@@ -31,7 +31,7 @@ class Runner:
         window_start_time = current_time - self.window
 
         data: pd.DataFrame = self.client.load(start=window_start_time, end=current_time)
-        action: Action = self.strategy.action(data)
+        action: Action = self.strategy.action(data, self.client.in_position())
 
         if action == Action.LONG:
             self.client.set_using_part(self.long)
@@ -42,6 +42,9 @@ class Runner:
         else:
             pass  # DO NOTHING
 
+        self.client.set_up_stops(self.strategy.up_stops())
+        self.client.set_bottom_stops(self.strategy.bottom_stops())
+
         return (
             current_time,
             self.client.balance()["sum"],
@@ -50,11 +53,74 @@ class Runner:
 
     @staticmethod
     def _save_graph(
-        indices: tp.List[dt.datetime], values: tp.List[float], filename: str
+        indices: tp.List[dt.datetime],
+        values: tp.List[list[float]],
+        filename: str,
+        stocks: tp.List[dict] = None,
     ):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 5))
         fig.autofmt_xdate(rotation=45)
-        ax.plot(indices, values)
+        top_money = max(values[0])
+        bottom_money = min(values[0])
+        for values_i in values[1:]:
+            top = max(values_i)
+            bottom = min(values_i)
+            ax.plot(
+                indices,
+                [
+                    (item - bottom) / (top - bottom) * (top_money - bottom_money)
+                    + (bottom_money)
+                    for item in values_i
+                ],
+            )
+        ax.plot(
+            indices,
+            values[0],
+        )
+        if stocks:
+            stocks = pd.DataFrame(stocks, index=indices)
+            print(stocks.index[-1])
+            print(indices[-1])
+            stocks[["open", "close", "high", "low"]] *= top_money / stocks.close.max()
+            # print(stocks)
+            # .reindex(["time"])
+
+            up = stocks[stocks.close >= stocks.open]
+
+            # "down" dataframe will store the stock_prices
+            # when the closing stock price is
+            # lesser than the opening stock prices
+            down = stocks[stocks.close < stocks.open]
+
+            ax.bar(up.index, (up.close - up.open), 0.002, bottom=up.open, color="green")
+            ax.bar(
+                up.index, (up.high - up.close), 0.0005, bottom=up.close, color="green"
+            )
+            ax.bar(up.index, (up.low - up.open), 0.0005, bottom=up.open, color="green")
+
+            # Plotting down prices of the stock
+            ax.bar(
+                down.index,
+                (down.close - down.open),
+                0.002,
+                bottom=down.open,
+                color="red",
+            )
+            ax.bar(
+                down.index,
+                (down.high - down.open),
+                0.0005,
+                bottom=down.open,
+                color="red",
+            )
+            ax.bar(
+                down.index,
+                (down.low - down.close),
+                0.0005,
+                bottom=down.close,
+                color="red",
+            )
+
         fig.savefig(filename)
         plt.close(fig)
 
@@ -62,6 +128,7 @@ class Runner:
         indices = []
         balances = []
         btcs = []
+        stocks = []
 
         for _ in tqdm.tqdm(range(self.client.data.shape[0])):
             if not self.client.next():
@@ -71,6 +138,8 @@ class Runner:
             indices.append(index)
             balances.append(balance)
             btcs.append(btc)
+            stocks.append(self.client.current())
 
-        self._save_graph(indices, balances, self.graph_filename)
-        self._save_graph(indices, btcs, f"BTC_{self.graph_filename}")
+        self._save_graph(indices, [balances, btcs], self.graph_filename, stocks)
+        # self._save_graph(indices, [balances, btcs], self.graph_filename, None)
+        # self._save_graph(indices, [btcs], f"BTC_{self.graph_filename}")

@@ -19,7 +19,7 @@ class ClaudeStrategy(AbstractStrategy):
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01)
 
-    def action(self, data: pd.DataFrame) -> Action:
+    def action(self, data: pd.DataFrame, position: bool) -> Action:
         df = data.copy()
         # print("HELLO!")
         # print(data)

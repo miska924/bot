@@ -8,7 +8,7 @@ class RandomStrategy(AbstractStrategy):
     def __init__(self):
         pass
 
-    def action(self, data: pd.DataFrame) -> Action:
+    def action(self, data: pd.DataFrame, position: bool) -> Action:
         action = randint(0, 2)
         if action == 0:
             return Action.LONG

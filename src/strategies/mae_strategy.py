@@ -8,7 +8,7 @@ class MAEStrategy(AbstractStrategy):
     def __init__(self, threshold=0.0000):
         self.threshold = threshold
 
-    def action(self, data: pd.DataFrame) -> Action:
+    def action(self, data: pd.DataFrame, position: bool) -> Action:
         long_average = data.tail(24).close.mean()
         short_average = data.tail(12).close.mean()
 

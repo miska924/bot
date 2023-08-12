@@ -13,6 +13,7 @@ from src.strategies.random_strategy import RandomStrategy
 from src.strategies.manual_strategy import ManualStrategy
 from src.strategies.mae_strategy import MAEStrategy
 from src.strategies.reversals_strategy import ReversalsStrategy
+from src.strategies.reversals_v2_strategy import ReversalsV2Strategy
 from . import Runner
 
 
@@ -23,10 +24,10 @@ logging.getLogger().setLevel(logging.INFO)
 INTERVAL_MINUTES = 1
 INTERVAL = f"{INTERVAL_MINUTES}m"
 
-WINDOW_SIZE = 30
+WINDOW_SIZE = 100
 
-DAYS = 365
-STEP = 30
+DAYS = 7
+STEP = 7
 # strategy = RandomStrategy()
 # strategy = MAEStrategy()
 # strategy = MAEStrategy()
@@ -52,15 +53,16 @@ def main():
         frames.append(frame)
 
     data = pd.concat(frames)
-    Runner._save_graph(indices=data.time, values=data.close, filename="BTC.png")
+    Runner._save_graph(indices=data.time, values=[data.close], filename="BTC.png")
     print(data.shape)
     # logging.info(f"DATA SHAPE {data.shape}")
 
     for strategy in [
-        Combination((ReversalsStrategy(), MAEStrategy())),
-        ReversalsStrategy(),
-        MAEStrategy(),
-        RandomStrategy(),
+        # Combination((ReversalsStrategy(), MAEStrategy())),
+        ReversalsV2Strategy(),
+        # ReversalsStrategy(),
+        # MAEStrategy(),
+        # RandomStrategy(),
     ]:
         client = BacktesterClient(data, interval=INTERVAL)
         Runner(
