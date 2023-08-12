@@ -52,12 +52,10 @@ class AbstractClient:
         return self.position
 
     def set_up_stops(self, stops: list):
-        for stop in stops:
-            self.up_stops.add(stop)
+        self.up_stops = set(stops)
 
     def set_bottom_stops(self, stops: list):
-        for stop in stops:
-            self.bottom_stops.add(stop)
+        self.bottom_stops = set(stops)
 
     def check_stops(self):
         price = self._price()

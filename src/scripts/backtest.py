@@ -21,13 +21,13 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
 
 
-INTERVAL_MINUTES = 1
+INTERVAL_MINUTES = 15
 INTERVAL = f"{INTERVAL_MINUTES}m"
 
-WINDOW_SIZE = 100
+WINDOW_SIZE = 120
 
-DAYS = 7
-STEP = 7
+DAYS = 30 * 12
+STEP = 30
 # strategy = RandomStrategy()
 # strategy = MAEStrategy()
 # strategy = MAEStrategy()

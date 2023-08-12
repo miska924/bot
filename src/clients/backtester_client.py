@@ -8,7 +8,7 @@ import datetime as dt
 import pandas as pd
 import math
 
-PRICE_ITERATIONS = 10
+PRICE_ITERATIONS = 20
 
 
 class BacktesterClient(AbstractClient):
@@ -30,6 +30,7 @@ class BacktesterClient(AbstractClient):
         self.max_notional = 9000000
 
         self.comission = 0.0001
+        # self.comission = 0
         self.up_stops = set()
         self.bottom_stops = set()
         self.position = False

@@ -140,6 +140,6 @@ class Runner:
             btcs.append(btc)
             stocks.append(self.client.current())
 
-        self._save_graph(indices, [balances, btcs], self.graph_filename, stocks)
-        # self._save_graph(indices, [balances, btcs], self.graph_filename, None)
+        # self._save_graph(indices, [balances, btcs], self.graph_filename, stocks)
+        self._save_graph(indices, [balances, btcs], self.graph_filename, None)
         # self._save_graph(indices, [btcs], f"BTC_{self.graph_filename}")
