@@ -57,20 +57,39 @@ class AbstractClient:
     def set_bottom_stops(self, stops: list):
         self.bottom_stops = set(stops)
 
+    def set_buy_up(self, thresholds: list):
+        self.buy_up = set(thresholds)
+
+    def set_sell_bottom(self, thresholds: list):
+        self.sell_bottom = set(thresholds)
+
     def check_stops(self):
         price = self._price()
 
-        for stop in self.up_stops:
-            if price > stop:
-                self.set_using_part(0)
-                self.up_stops = set()
-                self.bottom_stops = set()
+        if self.in_position():
+            for stop in self.up_stops:
+                if price > stop:
+                    self.set_using_part(0)
+                    self.up_stops = set()
+                    self.bottom_stops = set()
 
-        for stop in self.bottom_stops:
-            if price < stop:
-                self.set_using_part(0)
-                self.up_stops = set()
-                self.bottom_stops = set()
+            for stop in self.bottom_stops:
+                if price < stop:
+                    self.set_using_part(0)
+                    self.up_stops = set()
+                    self.bottom_stops = set()
+        else:
+            for buy in self.buy_up:
+                if price > buy:
+                    self.set_using_part(0.5)  # todo
+                    self.buy_up = set()
+                    self.sell_bottom = set()
+
+            for sell in self.sell_bottom:
+                if price < sell:
+                    self.set_using_part(-0.5)  # todo
+                    self.buy_up = set()
+                    self.sell_bottom = set()
 
     def _asset_balance(self, asset: str) -> float:
         raise NotImplementedError()

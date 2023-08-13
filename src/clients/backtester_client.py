@@ -38,6 +38,9 @@ class BacktesterClient(AbstractClient):
         self.price_iteration = 0
         self.last_price = self._price()
 
+        self.buy_up = set()
+        self.sell_bottom = set()
+
     def check_stops(self):
         # return
         for i in range(PRICE_ITERATIONS):
@@ -65,12 +68,12 @@ class BacktesterClient(AbstractClient):
         return result
 
     def _price(self) -> float:
-        return self.data.iloc[self.index].close
-        # (
-        #     self.data.iloc[self.index].close * (PRICE_ITERATIONS - self.price_iteration)
-        #     + self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)].close
-        #     * self.price_iteration
-        # ) / PRICE_ITERATIONS
+        # return self.data.iloc[self.index].close
+        return (
+            self.data.iloc[self.index].close * (PRICE_ITERATIONS - self.price_iteration)
+            + self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)].close
+            * self.price_iteration
+        ) / PRICE_ITERATIONS
 
     def _order(self, quantity: str) -> None:
         quantity: float = float(quantity)

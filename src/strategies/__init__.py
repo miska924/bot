@@ -21,6 +21,12 @@ class AbstractStrategy:
     def bottom_stops(self) -> list[float]:
         return [-0.01]
 
+    def buy_up(self) -> list[float]:
+        return []
+
+    def sell_bottom(self) -> list[float]:
+        return []
+
 
 class Combination(AbstractStrategy):
     def __init__(self, strategies):
@@ -48,3 +54,13 @@ class Combination(AbstractStrategy):
         stops = []
         for strategy in self.strategies:
             stops += strategy.bottom_stops()
+
+    def buy_up(self) -> list[float]:
+        stops = []
+        for strategy in self.strategies:
+            stops += strategy.buy_up()
+
+    def sell_bottom(self) -> list[float]:
+        stops = []
+        for strategy in self.strategies:
+            stops += strategy.sell_bottom()

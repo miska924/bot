@@ -44,6 +44,8 @@ class Runner:
 
         self.client.set_up_stops(self.strategy.up_stops())
         self.client.set_bottom_stops(self.strategy.bottom_stops())
+        self.client.set_buy_up(self.strategy.buy_up())
+        self.client.set_sell_bottom(self.strategy.sell_bottom())
 
         return (
             current_time,
@@ -63,8 +65,8 @@ class Runner:
         top_money = max(values[0])
         bottom_money = min(values[0])
         for values_i in values[1:]:
-            top = max(values_i)
-            bottom = min(values_i)
+            top = max(1e-6, max(values_i))
+            bottom = min(-1e-6, min(values_i))
             ax.plot(
                 indices,
                 [
@@ -142,4 +144,4 @@ class Runner:
 
         # self._save_graph(indices, [balances, btcs], self.graph_filename, stocks)
         self._save_graph(indices, [balances, btcs], self.graph_filename, None)
-        # self._save_graph(indices, [btcs], f"BTC_{self.graph_filename}")
+        self._save_graph(indices, [btcs], f"BTC_{self.graph_filename}", None)

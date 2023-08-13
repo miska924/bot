@@ -44,6 +44,7 @@ def main():
     )
 
     current: dt.datetime = dt.datetime.now()
+    # current = dt.datetime(year=2022, month=11, day=1)
     frames = []
     for i in tqdm.tqdm(range(0, DAYS, STEP)):
         start: dt.datetime = current - dt.timedelta(days=DAYS - i)
