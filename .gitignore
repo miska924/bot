@@ -1,3 +1,4 @@
-tmp.png
+*.png
+*.csv
 response.json
 __pycache__
