@@ -63,7 +63,7 @@ def main():
         action: Action = STRATEGY.action(data)
 
         if action == Action.LONG:
-            client.set_using_part(0.5)
+            client.set_using_part(0.9)
         elif action == Action.SHORT:
             client.set_using_part(0)
         elif action == Action.NONE:

@@ -8,6 +8,21 @@ from src.clients import AbstractClient
 from src.strategies import AbstractStrategy, Action
 
 
+def save_plot(
+    indices: tp.List[dt.datetime],
+    values: tp.List[list[float]],
+    filename: str,
+):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 5))
+    ax.grid(True)
+    fig.autofmt_xdate(rotation=45)
+    for values_i in values:
+        ax.plot(indices, values_i)
+
+    fig.savefig(filename)
+    plt.close(fig)
+
+
 class Runner:
     def __init__(
         self,
@@ -15,8 +30,8 @@ class Runner:
         strategy: AbstractStrategy,
         window: dt.timedelta,
         graph_filename: str = "tmp.png",
-        long: float = 0.5,
-        short: float = -0.5,
+        long: float = 0.9,
+        short: float = -0.9,
     ):
         self.client: AbstractClient = client
         self.strategy: AbstractStrategy = strategy
@@ -61,6 +76,8 @@ class Runner:
         stocks: tp.List[dict] = None,
     ):
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 5))
+
+        ax.grid(True)
         fig.autofmt_xdate(rotation=45)
         top_money = max(values[0])
         bottom_money = min(values[0])

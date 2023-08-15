@@ -14,7 +14,7 @@ from src.strategies.manual_strategy import ManualStrategy
 from src.strategies.mae_strategy import MAEStrategy
 from src.strategies.reversals_strategy import ReversalsStrategy
 from src.strategies.reversals_v2_strategy import ReversalsV2Strategy
-from . import Runner
+from . import Runner, save_plot
 
 
 logging.basicConfig()
@@ -26,36 +26,61 @@ INTERVAL = f"{INTERVAL_MINUTES}m"
 
 WINDOW_SIZE = 120
 
-DAYS = 30 * 12
-STEP = 30
+HOURS = 24 * 30 * 12
+STEP = 24 * 30
 # strategy = RandomStrategy()
 # strategy = MAEStrategy()
 # strategy = MAEStrategy()
 
+USE_CACHE = True
+SAVE = True
+
 
 def main():
-    api_key = os.environ["BINANCE_API_KEY"]
-    api_secret = os.environ["BINANCE_SECRET_KEY"]
-    # logging.info(api_key)
-    # logging.info(api_secret)
+    if not USE_CACHE:
+        api_key = os.environ["BINANCE_API_KEY"]
+        api_secret = os.environ["BINANCE_SECRET_KEY"]
+        # logging.info(api_key)
+        # logging.info(api_secret)
 
-    binance_client = BinanceClient(
-        api_key=api_key, api_secret=api_secret, interval=INTERVAL, testnet=False
+        binance_client = BinanceClient(
+            api_key=api_key, api_secret=api_secret, interval="15m", testnet=False
+        )
+
+        binance_client_exact = BinanceClient(
+            api_key=api_key, api_secret=api_secret, interval="1s", testnet=False
+        )
+
+        current: dt.datetime = dt.datetime.now()
+        # current = dt.datetime(year=2022, month=7, day=28)
+        frames = []
+        # exact_frames = []
+        for i in tqdm.tqdm(range(0, HOURS, STEP)):
+            start: dt.datetime = current - dt.timedelta(hours=HOURS - i)
+            end: dt.datetime = current - dt.timedelta(hours=HOURS - i - STEP)
+            frame = binance_client.load(start=start, end=end)
+            # exact_frame = binance_client_exact.load(start=start, end=end)
+            # logging.info(f"FRAME SHAPE {frame.shape}")
+            frames.append(frame)
+            # exact_frames.append(exact_frame)
+
+        data = pd.concat(frames)
+        # exact_data = pd.concat(exact_frames)
+        if SAVE:
+            data.to_csv("data.csv")
+            # exact_data.to_csv("exact_data.csv")
+    else:
+        data = pd.read_csv("data.csv")
+        # exact_data = pd.read_csv("exact_data.csv")
+
+    # print(data.time.to_list())
+    save_plot(
+        indices=[dt.datetime.fromtimestamp(t) for t in data.time],
+        values=[data.high, data.low, data.close, data.open],
+        filename="BTC.png",
     )
-
-    current: dt.datetime = dt.datetime.now()
-    # current = dt.datetime(year=2022, month=11, day=1)
-    frames = []
-    for i in tqdm.tqdm(range(0, DAYS, STEP)):
-        start: dt.datetime = current - dt.timedelta(days=DAYS - i)
-        end: dt.datetime = current - dt.timedelta(days=DAYS - i - STEP)
-        frame = binance_client.load(start=start, end=end)
-        # logging.info(f"FRAME SHAPE {frame.shape}")
-        frames.append(frame)
-
-    data = pd.concat(frames)
-    Runner._save_graph(indices=data.time, values=[data.close], filename="BTC.png")
     print(data.shape)
+    # print(exact_data.shape)
     # logging.info(f"DATA SHAPE {data.shape}")
 
     for strategy in [

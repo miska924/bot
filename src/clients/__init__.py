@@ -79,15 +79,18 @@ class AbstractClient:
                     self.up_stops = set()
                     self.bottom_stops = set()
         else:
+            if self.price_iteration != 0:
+                return
+
             for buy in self.buy_up:
                 if price > buy:
-                    self.set_using_part(0.5)  # todo
+                    self.set_using_part(0.9)  # todo
                     self.buy_up = set()
                     self.sell_bottom = set()
 
             for sell in self.sell_bottom:
                 if price < sell:
-                    self.set_using_part(-0.5)  # todo
+                    self.set_using_part(-0.9)  # todo
                     self.buy_up = set()
                     self.sell_bottom = set()
 

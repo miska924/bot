@@ -8,13 +8,19 @@ import datetime as dt
 import pandas as pd
 import math
 
-PRICE_ITERATIONS = 20
+PART = 20
+
+
+PRICE_ITERATIONS = PART * 3
 
 
 class BacktesterClient(AbstractClient):
-    def __init__(self, data: pd.DataFrame, interval="1m"):
+    def __init__(
+        self, data: pd.DataFrame, data_exact: pd.DataFrame = None, interval="1m"
+    ):
         self.index = 0
         self.data = data
+        self.data_exact = data_exact
 
         self.using_amount = 0
         self.target_amount = 100
@@ -29,7 +35,7 @@ class BacktesterClient(AbstractClient):
         self.min_notional = 10
         self.max_notional = 9000000
 
-        self.comission = 0.0001
+        self.comission = 0.0005
         # self.comission = 0
         self.up_stops = set()
         self.bottom_stops = set()
@@ -44,8 +50,8 @@ class BacktesterClient(AbstractClient):
     def check_stops(self):
         # return
         for i in range(PRICE_ITERATIONS):
-            super().check_stops()
             self.price_iteration = i
+            super().check_stops()
         self.price_iteration = 0
 
     def current(self) -> dict:
@@ -68,12 +74,69 @@ class BacktesterClient(AbstractClient):
         return result
 
     def _price(self) -> float:
-        # return self.data.iloc[self.index].close
-        return (
-            self.data.iloc[self.index].close * (PRICE_ITERATIONS - self.price_iteration)
-            + self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)].close
-            * self.price_iteration
-        ) / PRICE_ITERATIONS
+        if self.data_exact:
+            left = self.data.iloc[self.index]
+            right = self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)]
+            interval = self.data_exact[
+                (self.data_exact.time >= left.time)
+                & (self.data_exact.time <= right.time)
+            ]
+            sz = interval.shape[0]
+            if sz == 0:
+                return right.close
+            else:
+                return interval.iloc[
+                    self.price_iteration * (sz - 1) // PRICE_ITERATIONS
+                ].close
+        # except Exception as e:
+        #     print(e)
+        #     print()
+
+        #     print("self.price_iteration", self.price_iteration)
+        #     print("sz", sz)
+        #     print("PRICE_ITERATIONS", PRICE_ITERATIONS)
+        #     raise e
+
+        # return (
+        #     self.data.iloc[self.index].close * (PRICE_ITERATIONS - self.price_iteration)
+        #     + self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)].close
+        #     * self.price_iteration
+        # ) / PRICE_ITERATIONS
+
+        cur = self.data.iloc[self.index]
+        nxt = self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)]
+        if cur.close < nxt.close:
+            if self.price_iteration < PART:
+                return (
+                    self.price_iteration * nxt.low
+                    + (PART - self.price_iteration) * cur.close
+                ) / PART
+            elif self.price_iteration < 2 * PART:
+                return (
+                    (self.price_iteration - PART) * nxt.high
+                    + (2 * PART - self.price_iteration) * nxt.low
+                ) / PART
+            else:
+                return (
+                    (self.price_iteration - 2 * PART) * nxt.close
+                    + (3 * PART - self.price_iteration) * nxt.high
+                ) / PART
+        else:
+            if self.price_iteration < PART:
+                return (
+                    self.price_iteration * nxt.high
+                    + (PART - self.price_iteration) * cur.close
+                ) / PART
+            elif self.price_iteration < 2 * PART:
+                return (
+                    (self.price_iteration - PART) * nxt.low
+                    + (2 * PART - self.price_iteration) * nxt.high
+                ) / PART
+            else:
+                return (
+                    (self.price_iteration - 2 * PART) * nxt.close
+                    + (3 * PART - self.price_iteration) * nxt.low
+                ) / PART
 
     def _order(self, quantity: str) -> None:
         quantity: float = float(quantity)

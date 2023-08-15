@@ -4,7 +4,7 @@ from . import AbstractStrategy, Action
 
 
 class ReversalsV2Strategy(AbstractStrategy):
-    def __init__(self, window: int = 10, position_ttl=120, threshold=0.2):
+    def __init__(self, window: int = 10, position_ttl=12000, threshold=0.2):
         self.window = window
         self._up_stops = []
         self._bottom_stops = []
@@ -39,6 +39,7 @@ class ReversalsV2Strategy(AbstractStrategy):
             self.long_entry = None
             self.position_ttl -= 1
             if not self.position_ttl:
+                print("oh(")
                 return Action.NONE
             return None
         self.position_ttl = 0
@@ -52,7 +53,7 @@ class ReversalsV2Strategy(AbstractStrategy):
 
         size = data.shape[0]
 
-        if size < 50:
+        if size < 100:
             return None
 
         high: pd.Series = data.iloc[-1].high
@@ -73,33 +74,56 @@ class ReversalsV2Strategy(AbstractStrategy):
 
         # print("hello")
 
-        if _max - _min > _min * 0.005 and low < _min and size - min_index < self.window:
+        if (
+            _max - _min > _min * 0.001
+            and low < _min
+            and 5 < size - min_index < self.window
+        ):
             # for i in range(size):
             #     print(data.iloc[i])
             self.short_entry = None
             self.long_entry = high
             # print("long", high)
-            self.entry_ttl = 3
+            self.entry_ttl = self.window
         elif (
-            _max - _min > _min * 0.005
+            _max - _min > _min * 0.001
             and high > _max
-            and size - max_index < self.window
+            and 5 < size - max_index < self.window
         ):
             # for i in range(size):
             #     print(data.iloc[i])
             self.short_entry = low
             self.long_entry = None
             # print("short", low)
-            self.entry_ttl = 3
+            self.entry_ttl = self.window
 
         if self.long_entry:
-            self._up_stops = [_max - (_max - _min) * self.threshold]
+            # _min = data.iloc[max_index:].low.min()
             self._bottom_stops = [_min]
-
-        if self.short_entry:
-            # self.entry_ttl -= 1
-            self._up_stops = [_max]
-            self._bottom_stops = [_min + (_max - _min) * self.threshold]
+            if min_index < self.window:
+                self.long_entry = None
+            elif self.long_entry >= _max or self.long_entry <= _min:
+                self.long_entry = None
+            elif (self.long_entry - _min) * 5 > (_max - self.long_entry):
+                self.long_entry = None
+            else:
+                # _min = max(_min, self.long_entry * 0.999)
+                _max = self.long_entry + (self.long_entry - _min) * 5
+                self._bottom_stops = [_min]
+                self._up_stops = [_max]
+        elif self.short_entry:
+            # _max = data.iloc[min_index:].high.max()
+            if max_index < self.window:
+                self.short_entry = None
+            elif self.short_entry >= _max or self.short_entry <= _min:
+                self.short_entry = None
+            elif (_max - self.short_entry) * 5 > (self.short_entry - _min):
+                self.short_entry = None
+            else:
+                # _max = min(_max, self.short_entry * 1.001)
+                _min = self.short_entry - (_max - self.short_entry) * 5
+                self._bottom_stops = [_min]
+                self._up_stops = [_max]
 
             # if self.long_entry and close > self.long_entry:
             #     if _max - close < (close - _min) * 1:
