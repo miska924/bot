@@ -7,6 +7,7 @@ import logging
 import datetime as dt
 import pandas as pd
 import math
+from pytimeparse.timeparse import timeparse
 
 
 class BinanceClient(AbstractClient):
@@ -37,6 +38,16 @@ class BinanceClient(AbstractClient):
         self.max_notional = float(symbol_info["filters"][6]["maxNotional"])
         # self.max_leverage = self.client.get_max_margin_loan(asset=self.using)
         # logging.info(self.max_leverage)
+
+    def last(self, count):
+        window = dt.timedelta(seconds=timeparse(self.interval)) * (1000)
+        end = self.time()
+        start = end - window
+        print(start, end)
+        res = self.load(start, end)
+        print(res)
+        res.index = [dt.datetime.fromtimestamp(item) for item in res.time.to_list()]
+        return res.tail(count)
 
     def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
         try:
@@ -88,7 +99,7 @@ class BinanceClient(AbstractClient):
         except BinanceOrderException as e:
             logging.error(f"Ошибка создания ордера: {e}")
 
-    def _price(self):
+    def price(self):
         try:
             price = self.client.get_symbol_ticker(symbol=self.symbol)
             return float(price["price"])
@@ -97,7 +108,7 @@ class BinanceClient(AbstractClient):
             logging.error(f"Ошибка получения цены: {e}")
             return None
 
-    def _asset_balance(self, asset: str) -> float:
+    def asset_balance(self, asset: str) -> float:
         try:
             amount = self.client.get_asset_balance(asset=asset)
             return float(amount["free"])

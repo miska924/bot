@@ -8,10 +8,61 @@ import datetime as dt
 import pandas as pd
 import math
 
-PART = 20
+
+CANDLE_INTERPOLATION_STEPS = 30
 
 
-PRICE_ITERATIONS = PART * 3
+def emulate_candle(candle: pd.core.series.Series, progress: float):
+    result = candle.copy()
+    result.low = candle.open
+    result.high = candle.open
+
+    if candle.open > candle.close:
+        #      high
+        # open      \     close
+        #            \   /
+        #             low
+        if progress * 3 < 1.0:  # open -> low
+            first = 1.0 - progress * 3
+            second = progress * 3
+            result.close = first * candle.open + second * candle.high
+            result.high = result.close
+        elif progress * 3 < 2.0:  # low -> high
+            first = 2.0 - progress * 3
+            second = progress * 3 - 1.0
+            result.close = first * candle.high + second * candle.low
+            result.high = candle.high
+            result.low = min(result.low, result.close)
+        else:  # high -> close
+            first = 3.0 - progress * 3
+            second = progress * 3 - 2.0
+            result.close = first * candle.low + second * candle.close
+            result.low = candle.low
+            result.high = candle.high
+    else:
+        #           high
+        # open     /    \
+        #     \   /      close
+        #      low
+        if progress * 3 < 1.0:
+            first = 1.0 - progress * 3
+            second = progress * 3
+            result.close = first * candle.open + second * candle.low
+            result.low = result.close
+        elif progress * 3 < 2.0:
+            first = 2.0 - progress * 3
+            second = progress * 3 - 1.0
+            result.close = first * candle.low + second * candle.high
+            result.low = candle.low
+            result.high = max(result.high, result.close)
+        else:
+            first = 3.0 - progress * 3
+            second = progress * 3 - 2.0
+            result.close = first * candle.high + second * candle.close
+            result.low = candle.low
+            result.high = candle.high
+
+    return result
 
 
 class BacktesterClient(AbstractClient):
@@ -19,7 +70,7 @@ class BacktesterClient(AbstractClient):
         self, data: pd.DataFrame, data_exact: pd.DataFrame = None, interval="1m"
     ):
         self.index = 0
-        self.data = data
+        self.data = data.copy()
         self.data_exact = data_exact
 
         self.using_amount = 0
@@ -36,107 +87,42 @@ class BacktesterClient(AbstractClient):
         self.max_notional = 9000000
 
         self.comission = 0.0005
-        # self.comission = 0
-        self.up_stops = set()
-        self.bottom_stops = set()
-        self.position = False
+        self.progress = 0.0
+        self.current_candle_step = 0
 
-        self.price_iteration = 0
-        self.last_price = self._price()
-
-        self.buy_up = set()
-        self.sell_bottom = set()
-
-    def check_stops(self):
-        # return
-        for i in range(PRICE_ITERATIONS):
-            self.price_iteration = i
-            super().check_stops()
-        self.price_iteration = 0
-
-    def current(self) -> dict:
-        return self.data.iloc[self.index]
+    def _iterate(self) -> None:
+        self.current_candle_step += 1
+        if self.current_candle_step == CANDLE_INTERPOLATION_STEPS + 1:
+            self.current_candle_step = 0
+            self.index += 1
+        self.progress = self.current_candle_step / CANDLE_INTERPOLATION_STEPS
 
     def next(self) -> bool:
-        self.check_stops()
-        self.index += 1
-        # logging.info(self.data.shape)
+        self._iterate()
         return self.index < self.data.shape[0] and self.balance()["sum"] > 0
 
     def time(self) -> dt.datetime:
-        current_time = dt.datetime.fromtimestamp(self.data.iloc[self.index].time)
-        return current_time
-
-    def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
-        result = self.data[
-            (self.data.time >= start.timestamp()) & (self.data.time <= end.timestamp())
-        ]
-        return result
-
-    def _price(self) -> float:
-        if self.data_exact:
-            left = self.data.iloc[self.index]
-            right = self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)]
-            interval = self.data_exact[
-                (self.data_exact.time >= left.time)
-                & (self.data_exact.time <= right.time)
-            ]
-            sz = interval.shape[0]
-            if sz == 0:
-                return right.close
-            else:
-                return interval.iloc[
-                    self.price_iteration * (sz - 1) // PRICE_ITERATIONS
-                ].close
-        # except Exception as e:
-        #     print(e)
-        #     print()
-
-        #     print("self.price_iteration", self.price_iteration)
-        #     print("sz", sz)
-        #     print("PRICE_ITERATIONS", PRICE_ITERATIONS)
-        #     raise e
-
-        # return (
-        #     self.data.iloc[self.index].close * (PRICE_ITERATIONS - self.price_iteration)
-        #     + self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)].close
-        #     * self.price_iteration
-        # ) / PRICE_ITERATIONS
-
         cur = self.data.iloc[self.index]
         nxt = self.data.iloc[min(self.data.shape[0] - 1, self.index + 1)]
-        if cur.close < nxt.close:
-            if self.price_iteration < PART:
-                return (
-                    self.price_iteration * nxt.low
-                    + (PART - self.price_iteration) * cur.close
-                ) / PART
-            elif self.price_iteration < 2 * PART:
-                return (
-                    (self.price_iteration - PART) * nxt.high
-                    + (2 * PART - self.price_iteration) * nxt.low
-                ) / PART
-            else:
-                return (
-                    (self.price_iteration - 2 * PART) * nxt.close
-                    + (3 * PART - self.price_iteration) * nxt.high
-                ) / PART
-        else:
-            if self.price_iteration < PART:
-                return (
-                    self.price_iteration * nxt.high
-                    + (PART - self.price_iteration) * cur.close
-                ) / PART
-            elif self.price_iteration < 2 * PART:
-                return (
-                    (self.price_iteration - PART) * nxt.low
-                    + (2 * PART - self.price_iteration) * nxt.high
-                ) / PART
-            else:
-                return (
-                    (self.price_iteration - 2 * PART) * nxt.close
-                    + (3 * PART - self.price_iteration) * nxt.low
-                ) / PART
+
+        return dt.datetime.fromtimestamp(
+            nxt.time * self.progress + cur.time * (1.0 - self.progress)
+        )
+
+    def last(self, count: int):
+        avaliable = self.data.iloc[: self.index]
+        emulated_last = emulate_candle(self.data.iloc[self.index], self.progress)
+        avaliable = pd.concat([avaliable, pd.DataFrame([emulated_last])])
+        return avaliable.tail(count - 1)
+
+    def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
+        avaliable = self.data.iloc[: self.index]
+        emulated_last = emulate_candle(self.data.iloc[self.index], self.progress)
+        avaliable = pd.concat([avaliable, pd.DataFrame([emulated_last])])
+        return avaliable[start.timestamp() <= avaliable.time <= end.timestamp()]
+
+    def price(self) -> float:
+        return emulate_candle(self.data.iloc[self.index], self.progress).close
 
     def _order(self, quantity: str) -> None:
         quantity: float = float(quantity)
@@ -144,7 +130,7 @@ class BacktesterClient(AbstractClient):
         volume = self._price() * quantity
         self.target_amount -= volume + self.comission * abs(volume)
 
-    def _asset_balance(self, asset: str) -> float:
+    def asset_balance(self, asset: str) -> float:
         if asset == "USDT":
             # logging.info(f"USDT: {self.target_amount}")
             return self.target_amount

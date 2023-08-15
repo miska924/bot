@@ -3,6 +3,7 @@ import datetime as dt
 import math
 from enum import Enum
 import logging
+import time
 
 
 def sign(x: float) -> int:
@@ -14,21 +15,17 @@ class AbstractClient:
         pass
 
     def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
-        raise NotImplementedError()
+        raise NotImplementedError
 
-    def _price(self) -> float:
-        raise NotImplementedError()
+    def price(self) -> float:
+        raise NotImplementedError
 
     def _order(self, quantity: str):
-        raise NotImplementedError()
-
-    def current(self):
         raise NotImplementedError
 
     def set_using_part(self, using_part: float):
-        self.position = using_part != 0
         # print(self.in_position())
-        price = self._price()
+        price = self.price()
         balance = self.balance()
 
         amount = balance["sum"] * using_part - balance[self.using] * price
@@ -46,70 +43,31 @@ class AbstractClient:
         self._order(
             quantity=f"{quantity:0.{self.precision}f}",
         )
-        self.last_price = price
+        # self.last_price = price
 
     def in_position(self):
-        return self.position
+        balance = self.balance()
+        not_in_position = (
+            balance["sum"] * 0.999 < balance[self.target] < balance["sum"] * 1.001
+        )
+        return not not_in_position
 
-    def set_up_stops(self, stops: list):
-        self.up_stops = set(stops)
-
-    def set_bottom_stops(self, stops: list):
-        self.bottom_stops = set(stops)
-
-    def set_buy_up(self, thresholds: list):
-        self.buy_up = set(thresholds)
-
-    def set_sell_bottom(self, thresholds: list):
-        self.sell_bottom = set(thresholds)
-
-    def check_stops(self):
-        price = self._price()
-
-        if self.in_position():
-            for stop in self.up_stops:
-                if price > stop:
-                    self.set_using_part(0)
-                    self.up_stops = set()
-                    self.bottom_stops = set()
-
-            for stop in self.bottom_stops:
-                if price < stop:
-                    self.set_using_part(0)
-                    self.up_stops = set()
-                    self.bottom_stops = set()
-        else:
-            if self.price_iteration != 0:
-                return
-
-            for buy in self.buy_up:
-                if price > buy:
-                    self.set_using_part(0.9)  # todo
-                    self.buy_up = set()
-                    self.sell_bottom = set()
-
-            for sell in self.sell_bottom:
-                if price < sell:
-                    self.set_using_part(-0.9)  # todo
-                    self.buy_up = set()
-                    self.sell_bottom = set()
-
-    def _asset_balance(self, asset: str) -> float:
+    def asset_balance(self, asset: str) -> float:
         raise NotImplementedError()
 
     def balance(self) -> dict:
-        using_amount = self._asset_balance(asset=self.using)
-        target_amount = self._asset_balance(asset=self.target)
+        using_amount = self.asset_balance(asset=self.using)
+        target_amount = self.asset_balance(asset=self.target)
 
         return {
             self.using: using_amount,
             self.target: target_amount,
-            "sum": target_amount + using_amount * self._price(),
+            "sum": target_amount + using_amount * self.price(),
         }
 
     def next(self) -> bool:
-        self.check_stops()
-
+        time.sleep(0.5)
+        # self.check_stops()
         return True
 
     def time(self):
