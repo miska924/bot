@@ -7,7 +7,7 @@ import time
 from src.clients.binance_client import BinanceClient
 from src.strategies.random_strategy import RandomStrategy
 from src.strategies.manual_strategy import ManualStrategy
-from src.strategies import Action
+from src.strategies import Position
 
 
 logging.basicConfig()

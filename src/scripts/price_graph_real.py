@@ -51,7 +51,7 @@ def main():
     # logging.info(api_secret)
 
     client = BinanceClient(
-        api_key=api_key, api_secret=api_secret, interval="5m", testnet=False
+        api_key=api_key, api_secret=api_secret, interval="1m", testnet=False
     )
 
     fig = mpf.figure(figsize=(7, 8))
@@ -61,7 +61,7 @@ def main():
         ax1.clear()
         client.next()
         mpf.plot(
-            client.last(20),
+            client.last(100),
             ax=ax1,
             style="yahoo",
             type="candle",

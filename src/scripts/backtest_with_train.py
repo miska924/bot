@@ -11,7 +11,7 @@ from src.strategies.random_strategy import RandomStrategy
 from src.strategies.manual_strategy import ManualStrategy
 from src.strategies.mae_strategy import MAEStrategy
 from src.strategies.claude_strategy import ClaudeStrategy
-from src.strategies import Action
+from src.strategies import Position
 
 
 logging.basicConfig()
@@ -60,13 +60,13 @@ def main():
         ago: dt.datetime = current_datetime - dt.timedelta(days=365)
 
         data: pd.DataFrame = client.load(start=ago, end=current_datetime)
-        action: Action = STRATEGY.action(data)
+        action: Position = STRATEGY.action(data)
 
-        if action == Action.LONG:
-            client.set_using_part(0.9)
-        elif action == Action.SHORT:
-            client.set_using_part(0)
-        elif action == Action.NONE:
+        if action == Position.LONG:
+            client.set_using_part(0.5)
+        elif action == Position.SHORT:
+            client.set_using_part(-0.5)
+        elif action == Position.NONE:
             client.set_using_part(0)
         else:
             pass  # DO NOTHING

@@ -5,6 +5,8 @@ from enum import Enum
 import logging
 import time
 
+from src.strategies import Position
+
 
 def sign(x: float) -> int:
     return 1 if x > 0 else -1
@@ -45,12 +47,16 @@ class AbstractClient:
         )
         # self.last_price = price
 
-    def in_position(self):
+    def position(self):
         balance = self.balance()
-        not_in_position = (
-            balance["sum"] * 0.999 < balance[self.target] < balance["sum"] * 1.001
-        )
-        return not not_in_position
+        if balance["sum"] * 0.999 < balance[self.target] < balance["sum"] * 1.001:
+            return Position.NONE
+        if balance[self.using] > 0:
+            return Position.LONG
+        if balance[self.using] < 0:
+            return Position.SHORT
+
+        assert True
 
     def asset_balance(self, asset: str) -> float:
         raise NotImplementedError()
@@ -65,10 +71,14 @@ class AbstractClient:
             "sum": target_amount + using_amount * self.price(),
         }
 
+    def get_target(self) -> str:
+        return self.target
+
+    def get_using(self) -> str:
+        return self.using
+
     def next(self) -> bool:
-        time.sleep(0.5)
-        # self.check_stops()
         return True
 
     def time(self):
-        return dt.datetime.now()
+        return dt.datetime.now(dt.timezone.utc)

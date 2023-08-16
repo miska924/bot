@@ -9,7 +9,7 @@ import pandas as pd
 import math
 
 
-CANDLE_INTERPOLATION_STEPS = 30
+CANDLE_INTERPOLATION_STEPS = 12
 
 
 def emulate_candle(candle: pd.core.series.Series, progress: float):
@@ -67,11 +67,11 @@ def emulate_candle(candle: pd.core.series.Series, progress: float):
 
 class BacktesterClient(AbstractClient):
     def __init__(
-        self, data: pd.DataFrame, data_exact: pd.DataFrame = None, interval="1m"
+        self,
+        data: pd.DataFrame = None,
     ):
         self.index = 0
         self.data = data.copy()
-        self.data_exact = data_exact
 
         self.using_amount = 0
         self.target_amount = 100
@@ -79,7 +79,6 @@ class BacktesterClient(AbstractClient):
         self.using = "BTC"
         self.target = "USDT"
         self.symbol = "BTCUSDT"
-        self.interval = interval
 
         self.min_qty = 0.00000100
         self.precision = 8
@@ -109,13 +108,21 @@ class BacktesterClient(AbstractClient):
             nxt.time * self.progress + cur.time * (1.0 - self.progress)
         )
 
-    def last(self, count: int):
+    def last(self, count: int, offset: int = 0, time: dt.datetime = None):
+        assert offset >= 0
+        time = time if time else self.time()
+
         avaliable = self.data.iloc[: self.index]
         emulated_last = emulate_candle(self.data.iloc[self.index], self.progress)
         avaliable = pd.concat([avaliable, pd.DataFrame([emulated_last])])
-        return avaliable.tail(count - 1)
+        avaliable = avaliable[avaliable.index <= time]
+        return avaliable.tail(count + offset).head(count)
 
-    def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
+    def load(
+        self,
+        start: dt.datetime,
+        end: dt.datetime,
+    ) -> pd.DataFrame:
         avaliable = self.data.iloc[: self.index]
         emulated_last = emulate_candle(self.data.iloc[self.index], self.progress)
         avaliable = pd.concat([avaliable, pd.DataFrame([emulated_last])])
@@ -127,7 +134,7 @@ class BacktesterClient(AbstractClient):
     def _order(self, quantity: str) -> None:
         quantity: float = float(quantity)
         self.using_amount += quantity
-        volume = self._price() * quantity
+        volume = self.price() * quantity
         self.target_amount -= volume + self.comission * abs(volume)
 
     def asset_balance(self, asset: str) -> float:

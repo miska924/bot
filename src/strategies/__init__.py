@@ -2,7 +2,7 @@ import pandas as pd
 from enum import Enum
 
 
-class Action(Enum):
+class Position(Enum):
     LONG = 0
     NONE = 1
     SHORT = 2
@@ -12,55 +12,23 @@ class AbstractStrategy:
     def __init__(self):
         pass
 
-    def action(self, data: pd.DataFrame, position: bool) -> tuple[Action, list[float]]:
+    def action(self, data: pd.DataFrame, in_position: bool) -> Position:
         raise NotImplementedError
-
-    def up_stops(self) -> list[float]:
-        return [0.01]
-
-    def bottom_stops(self) -> list[float]:
-        return [-0.01]
-
-    def buy_up(self) -> list[float]:
-        return []
-
-    def sell_bottom(self) -> list[float]:
-        return []
 
 
 class Combination(AbstractStrategy):
     def __init__(self, strategies):
         self.strategies = strategies
 
-    def action(self, data: pd.DataFrame, position: bool) -> Action:
+    def action(self, data: pd.DataFrame, in_position: bool) -> Position:
         actions = []
         for strategy in self.strategies:
-            actions.append(strategy.action(data, position))
+            actions.append(strategy.action(data, in_position))
 
-        if all([action == Action.LONG for action in actions]):
-            return Action.LONG
-        if all([action == Action.SHORT for action in actions]):
-            return Action.SHORT
-        if any([action == Action.NONE for action in actions]):
-            return Action.NONE
+        if all([action == Position.LONG for action in actions]):
+            return Position.LONG
+        if all([action == Position.SHORT for action in actions]):
+            return Position.SHORT
+        if any([action == Position.NONE for action in actions]):
+            return Position.NONE
         return None
-
-    def up_stops(self) -> list[float]:
-        stops = []
-        for strategy in self.strategies:
-            stops += strategy.up_stops()
-
-    def bottom_stops(self) -> list[float]:
-        stops = []
-        for strategy in self.strategies:
-            stops += strategy.bottom_stops()
-
-    def buy_up(self) -> list[float]:
-        stops = []
-        for strategy in self.strategies:
-            stops += strategy.buy_up()
-
-    def sell_bottom(self) -> list[float]:
-        stops = []
-        for strategy in self.strategies:
-            stops += strategy.sell_bottom()

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from . import AbstractStrategy, Action
+from . import AbstractStrategy, Position
 
 
 class ReversalsV2Strategy(AbstractStrategy):
@@ -31,7 +31,7 @@ class ReversalsV2Strategy(AbstractStrategy):
         # print(res)
         return res
 
-    def action(self, data: pd.DataFrame, position: bool) -> Action:
+    def action(self, data: pd.DataFrame, position: bool) -> Position:
         if position:
             if not self.position_ttl:
                 self.position_ttl = self.position_ttl_limit
@@ -40,7 +40,7 @@ class ReversalsV2Strategy(AbstractStrategy):
             self.position_ttl -= 1
             if not self.position_ttl:
                 print("oh(")
-                return Action.NONE
+                return Position.NONE
             return None
         self.position_ttl = 0
 

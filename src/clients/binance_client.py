@@ -17,7 +17,7 @@ class BinanceClient(AbstractClient):
         api_secret: str,
         target: str = "USDT",
         using: str = "BTC",
-        interval: str = "1m",
+        interval: str = "15m",
         testnet: bool = True,
         stop: float = 0.01,
     ):
@@ -39,15 +39,14 @@ class BinanceClient(AbstractClient):
         # self.max_leverage = self.client.get_max_margin_loan(asset=self.using)
         # logging.info(self.max_leverage)
 
-    def last(self, count):
-        window = dt.timedelta(seconds=timeparse(self.interval)) * (1000)
-        end = self.time()
-        start = end - window
-        print(start, end)
+    def last(self, count: int, offset: int = 0, time: dt.datetime = None):
+        window_timedelta = dt.timedelta(seconds=timeparse(self.interval)) * (count + 1)
+        offset_timedelta = dt.timedelta(seconds=timeparse(self.interval)) * (offset)
+        end = (self.time() if not time else time) - offset_timedelta
+        start = end - window_timedelta
         res = self.load(start, end)
-        print(res)
-        res.index = [dt.datetime.fromtimestamp(item) for item in res.time.to_list()]
-        return res.tail(count)
+        res = res.tail(count)
+        return res
 
     def load(self, start: dt.datetime, end: dt.datetime) -> pd.DataFrame:
         try:
@@ -77,9 +76,11 @@ class BinanceClient(AbstractClient):
                 "volume": float(b[5]),
             }
             data.append(bar)
-        result = pd.DataFrame(data)
-        # print(result)
-        return result
+
+        data = pd.DataFrame(data)
+        data.index = [dt.datetime.fromtimestamp(item) for item in data.time.to_list()]
+
+        return data
 
     def _order(self, quantity: str) -> None:
         try:

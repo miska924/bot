@@ -1,6 +1,6 @@
 import pandas as pd
 
-from . import AbstractStrategy, Action
+from . import AbstractStrategy, Position
 
 
 class ReversalsStrategy(AbstractStrategy):
@@ -10,12 +10,12 @@ class ReversalsStrategy(AbstractStrategy):
         self.reaction = reaction
         self.window = window
 
-    def action(self, data: pd.DataFrame, position: bool) -> Action:
+    def action(self, data: pd.DataFrame, position: bool) -> Position:
         if data.shape[0] < 10:
             return None
         if self.ttl:
             self.ttl -= 1
-            # return None if self.ttl else Action.NONE
+            # return None if self.ttl else Position.NONE
 
         closes: pd.Series = data.head(data.shape[0] - self.reaction).close
         highs: pd.Series = data.head(data.shape[0] - self.reaction).high
@@ -39,7 +39,7 @@ class ReversalsStrategy(AbstractStrategy):
             ]
         ):
             self.ttl = self.wait
-            return Action.LONG
+            return Position.LONG
         elif closes.size - close_max_index < self.window and all(
             [
                 data.close.iloc[-i - 1] > highs.iloc[close_max_index]
@@ -47,6 +47,6 @@ class ReversalsStrategy(AbstractStrategy):
             ]
         ):
             self.ttl = self.wait
-            return Action.SHORT
+            return Position.SHORT
 
         return None

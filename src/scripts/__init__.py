@@ -5,7 +5,7 @@ import typing as tp
 import matplotlib.pyplot as plt
 
 from src.clients import AbstractClient
-from src.strategies import AbstractStrategy, Action
+from src.strategies import AbstractStrategy, Position
 
 
 def save_plot(
@@ -46,13 +46,13 @@ class Runner:
         window_start_time = current_time - self.window
 
         data: pd.DataFrame = self.client.load(start=window_start_time, end=current_time)
-        action: Action = self.strategy.action(data, self.client.in_position())
+        action: Position = self.strategy.action(data, self.client.in_position())
 
-        if action == Action.LONG:
+        if action == Position.LONG:
             self.client.set_using_part(self.long)
-        elif action == Action.SHORT:
+        elif action == Position.SHORT:
             self.client.set_using_part(self.short)
-        elif action == Action.NONE:
+        elif action == Position.NONE:
             self.client.set_using_part(0)
         else:
             pass  # DO NOTHING
