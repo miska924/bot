@@ -4,8 +4,7 @@ from . import AbstractStrategy, Position
 
 
 class MAEStrategy(AbstractStrategy):
-    # def __init__(self, threshold=0.005):
-    def __init__(self, short_period: int, long_period: int, threshold: float = 0.0001):
+    def __init__(self, short_period: int, long_period: int, threshold: float = 0.001):
         assert 0 < short_period < long_period
         assert 0.0 <= threshold <= 1.0
 
@@ -25,3 +24,5 @@ class MAEStrategy(AbstractStrategy):
 
         if long_average > short_average:
             return Position.SHORT if position != Position.SHORT else None
+
+        return None

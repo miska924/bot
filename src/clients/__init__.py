@@ -56,7 +56,7 @@ class AbstractClient:
         if balance[self.using] < 0:
             return Position.SHORT
 
-        assert True
+        assert None
 
     def asset_balance(self, asset: str) -> float:
         raise NotImplementedError()

@@ -9,7 +9,7 @@ import pandas as pd
 import math
 
 
-CANDLE_INTERPOLATION_STEPS = 12
+CANDLE_INTERPOLATION_STEPS = 30
 
 
 def emulate_candle(candle: pd.core.series.Series, progress: float):
@@ -129,7 +129,7 @@ class BacktesterClient(AbstractClient):
         return avaliable[start.timestamp() <= avaliable.time <= end.timestamp()]
 
     def price(self) -> float:
-        return emulate_candle(self.data.iloc[self.index], self.progress).close
+        return float(emulate_candle(self.data.iloc[self.index], self.progress).close)
 
     def _order(self, quantity: str) -> None:
         quantity: float = float(quantity)

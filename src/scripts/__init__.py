@@ -1,11 +1,28 @@
 import datetime as dt
 import pandas as pd
-import tqdm
 import typing as tp
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+import time
 
 from src.clients import AbstractClient
 from src.strategies import AbstractStrategy, Position
+
+import matplotlib.pyplot as plt
+import mplfinance as mpf
+import matplotlib.animation as animation
+
+
+def add_row(data: pd.DataFrame, index, row: dict):
+    if data is None:
+        tmp = pd.DataFrame(
+            [row],
+        )
+        tmp.index = (index,)
+        return tmp
+
+    data.loc[index] = row
+    return data
 
 
 def save_plot(
@@ -26,139 +43,135 @@ def save_plot(
 class Runner:
     def __init__(
         self,
-        client: AbstractClient,
-        strategy: AbstractStrategy,
-        window: dt.timedelta,
-        graph_filename: str = "tmp.png",
+        context_window: int,
+        client_type: type,
+        strategy_type: type,
+        client_args: dict = dict(),
+        strategy_args: dict = dict(),
         long: float = 0.9,
         short: float = -0.9,
+        animate: bool = True,
     ):
-        self.client: AbstractClient = client
-        self.strategy: AbstractStrategy = strategy
-        self.window: dt.datetime = window
+        self.context_window = context_window
+        self.client: AbstractClient = client_type(**client_args)
+        self.strategy: AbstractStrategy = strategy_type(**strategy_args)
 
-        self.graph_filename: str = graph_filename
         self.long: float = long
         self.short: float = short
+        self.animate: bool = animate
 
-    def _iteration(self) -> tuple[dt.datetime, float]:
-        current_time = self.client.time()
-        window_start_time = current_time - self.window
+        self.balance: pd.DataFrame = None
 
-        data: pd.DataFrame = self.client.load(start=window_start_time, end=current_time)
-        action: Position = self.strategy.action(data, self.client.in_position())
+        self.long_positions: pd.DataFrame = None
+        self.short_positions: pd.DataFrame = None
+        self.zero_positions: pd.DataFrame = None
+
+        self._iterate_time = 0
+        self._render_time = 0
+
+    def _update_balance(self):
+        balance = self.client.balance()
+        self.balance = add_row(
+            data=self.balance,
+            index=self.client.time(),
+            row=dict(
+                balance=balance["sum"],
+                using=balance[self.client.get_using()],
+            ),
+        )
+
+    def _iterate(self):
+        data: pd.DataFrame = self.client.last(self.context_window)
+        action: Position = self.strategy.action(data, self.client.position())
 
         if action == Position.LONG:
             self.client.set_using_part(self.long)
-        elif action == Position.SHORT:
+            self.long_positions = add_row(
+                data=self.long_positions,
+                index=self.client.time(),
+                row=dict(value=self.client.price()),
+            )
+
+        if action == Position.SHORT:
             self.client.set_using_part(self.short)
-        elif action == Position.NONE:
+            self.short_positions = add_row(
+                data=self.short_positions,
+                index=self.client.time(),
+                row=dict(value=self.client.price()),
+            )
+
+        if action == Position.NONE:
             self.client.set_using_part(0)
-        else:
-            pass  # DO NOTHING
-
-        self.client.set_up_stops(self.strategy.up_stops())
-        self.client.set_bottom_stops(self.strategy.bottom_stops())
-        self.client.set_buy_up(self.strategy.buy_up())
-        self.client.set_sell_bottom(self.strategy.sell_bottom())
-
-        return (
-            current_time,
-            self.client.balance()["sum"],
-            self.client.balance()["BTC"],
-        )
-
-    @staticmethod
-    def _save_graph(
-        indices: tp.List[dt.datetime],
-        values: tp.List[list[float]],
-        filename: str,
-        stocks: tp.List[dict] = None,
-    ):
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 5))
-
-        ax.grid(True)
-        fig.autofmt_xdate(rotation=45)
-        top_money = max(values[0])
-        bottom_money = min(values[0])
-        for values_i in values[1:]:
-            top = max(1e-6, max(values_i))
-            bottom = min(-1e-6, min(values_i))
-            ax.plot(
-                indices,
-                [
-                    (item - bottom) / (top - bottom) * (top_money - bottom_money)
-                    + (bottom_money)
-                    for item in values_i
-                ],
+            self.zero_positions = add_row(
+                data=self.zero_positions,
+                index=self.client.time(),
+                row=dict(value=self.client.price()),
             )
-        ax.plot(
-            indices,
-            values[0],
-        )
-        if stocks:
-            stocks = pd.DataFrame(stocks, index=indices)
-            print(stocks.index[-1])
-            print(indices[-1])
-            stocks[["open", "close", "high", "low"]] *= top_money / stocks.close.max()
-            # print(stocks)
-            # .reindex(["time"])
-
-            up = stocks[stocks.close >= stocks.open]
-
-            # "down" dataframe will store the stock_prices
-            # when the closing stock price is
-            # lesser than the opening stock prices
-            down = stocks[stocks.close < stocks.open]
-
-            ax.bar(up.index, (up.close - up.open), 0.002, bottom=up.open, color="green")
-            ax.bar(
-                up.index, (up.high - up.close), 0.0005, bottom=up.close, color="green"
-            )
-            ax.bar(up.index, (up.low - up.open), 0.0005, bottom=up.open, color="green")
-
-            # Plotting down prices of the stock
-            ax.bar(
-                down.index,
-                (down.close - down.open),
-                0.002,
-                bottom=down.open,
-                color="red",
-            )
-            ax.bar(
-                down.index,
-                (down.high - down.open),
-                0.0005,
-                bottom=down.open,
-                color="red",
-            )
-            ax.bar(
-                down.index,
-                (down.low - down.close),
-                0.0005,
-                bottom=down.close,
-                color="red",
-            )
-
-        fig.savefig(filename)
-        plt.close(fig)
 
     def run(self):
-        indices = []
-        balances = []
-        btcs = []
-        stocks = []
+        fig = mpf.figure(figsize=(10, 10))
+        ax1, ax2, ax3 = fig.subplots(
+            nrows=3,
+            ncols=1,
+            gridspec_kw={"height_ratios": [1, 1, 4]},
+            sharex=True,
+        )
 
-        for _ in tqdm.tqdm(range(self.client.data.shape[0])):
-            if not self.client.next():
-                break
-            index, balance, btc = self._iteration()
+        def animate(ival, self, ax1, ax2, ax3):
+            self.last = time.time()
+            for i in range(10):
+                self.client.next()
+                self._iterate()
+                self._update_balance()
 
-            indices.append(index)
-            balances.append(balance)
-            btcs.append(btc)
-            stocks.append(self.client.current())
+            context = self.client.last(self.context_window)
 
-        # self._save_graph(indices, [balances, btcs], self.graph_filename, stocks)
-        self._save_graph(indices, [balances, btcs], self.graph_filename, None)
-        self._save_graph(indices, [btcs], f"BTC_{self.graph_filename}", None)
+            self._iterate_time += time.time() - self.last
+
+            self.last = time.time()
+
+            ax1.clear()
+            ax2.clear()
+            ax3.clear()
+
+            mpf.plot(
+                context,
+                ax=ax3,
+                style="yahoo",
+                type="candle",
+                show_nontrading=True,
+            )
+
+            for positions, marker, color in [
+                (self.short_positions, "v", "black"),
+                (self.long_positions, "^", "black"),
+                (self.zero_positions, "o", "gray"),
+            ]:
+                if positions is None:
+                    continue
+                context_positions = positions[positions.index >= context.index[0]]
+                ax3.scatter(
+                    context_positions.index,
+                    context_positions.value,
+                    marker=marker,
+                    color=color,
+                    s=100,
+                )
+
+            context_balance = self.balance[self.balance.index >= context.index[0]]
+            ax1.plot(
+                context_balance.index,
+                context_balance.balance,
+            )
+            ax2.plot(
+                context_balance.index,
+                context_balance.using,
+            )
+            self._render_time += time.time() - self.last
+            print(f"render: {self._render_time}")
+            print(f"iterate: {self._iterate_time}")
+
+        ani = animation.FuncAnimation(
+            fig, animate, fargs=(self, ax1, ax2, ax3), interval=100
+        )
+        mpf.show()
