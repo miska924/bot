@@ -1,1 +1,6 @@
+tqdm
+pandas
 python_binance==1.0.17
+matplotlib
+mplfinance
+pytimeparse

@@ -110,17 +110,18 @@ class Runner:
 
     def run(self):
         fig = mpf.figure(figsize=(10, 10))
-        ax1, ax2, ax3 = fig.subplots(
-            nrows=3,
+        ax1, ax2, ax3, ax4 = fig.subplots(
+            nrows=4,
             ncols=1,
-            gridspec_kw={"height_ratios": [1, 1, 4]},
+            gridspec_kw={"height_ratios": [1, 1, 4, 1]},
             sharex=True,
         )
 
         def animate(ival, self, ax1, ax2, ax3):
             self.last = time.time()
-            for i in range(10):
-                self.client.next()
+            for i in range(30):
+                if not self.client.next():
+                    return
                 self._iterate()
                 self._update_balance()
 
@@ -133,6 +134,7 @@ class Runner:
             ax1.clear()
             ax2.clear()
             ax3.clear()
+            ax4.clear()
 
             mpf.plot(
                 context,
@@ -145,7 +147,7 @@ class Runner:
             for positions, marker, color in [
                 (self.short_positions, "v", "black"),
                 (self.long_positions, "^", "black"),
-                (self.zero_positions, "o", "gray"),
+                (self.zero_positions, ".", "gray"),
             ]:
                 if positions is None:
                     continue
@@ -167,9 +169,17 @@ class Runner:
                 context_balance.index,
                 context_balance.using,
             )
+            indicators = self.strategy.indicators(context)
+            for indicator in indicators[0]:
+                ax3.plot(indicator)
+                
+            for indicator in indicators[1]:
+                ax4.plot(indicator)
+                
+            
             self._render_time += time.time() - self.last
-            print(f"render: {self._render_time}")
-            print(f"iterate: {self._iterate_time}")
+            # print(f"render: {self._render_time}")
+            # print(f"iterate: {self._iterate_time}")
 
         ani = animation.FuncAnimation(
             fig, animate, fargs=(self, ax1, ax2, ax3), interval=100

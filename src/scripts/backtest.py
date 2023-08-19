@@ -3,7 +3,7 @@ import pandas as pd
 
 from . import Runner
 from src.clients.backtester_client import BacktesterClient
-from src.strategies.mae import MAEStrategy
+from src.strategies.macd import MACDStrategy
 
 
 def main(args):
@@ -12,11 +12,8 @@ def main(args):
 
     runner = Runner(
         context_window=args.context,
-        strategy_type=MAEStrategy,
-        strategy_args=dict(
-            short_period=12,
-            long_period=24,
-        ),
+        strategy_type=MACDStrategy,
+        strategy_args=dict(),
         client_type=BacktesterClient,
         client_args=dict(
             data=data,

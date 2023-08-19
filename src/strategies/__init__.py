@@ -11,6 +11,9 @@ class Position(Enum):
 class AbstractStrategy:
     def __init__(self):
         pass
+    
+    def indicators(self) -> list:
+        raise NotImplementedError
 
     def action(self, data: pd.DataFrame, in_position: bool) -> Position:
         raise NotImplementedError
@@ -19,6 +22,9 @@ class AbstractStrategy:
 class Combination(AbstractStrategy):
     def __init__(self, strategies):
         self.strategies = strategies
+
+    def indicators(self) -> list:
+        return sum([strategy.indicators() for strategy in self.strategies])
 
     def action(self, data: pd.DataFrame, in_position: bool) -> Position:
         actions = []
