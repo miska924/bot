@@ -85,7 +85,7 @@ class BacktesterClient(AbstractClient):
         self.min_notional = 10
         self.max_notional = 9000000
 
-        self.comission = 0.0005
+        self.comission = 0.001
         self.progress = 0.0
         self.current_candle_step = 0
 

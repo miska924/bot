@@ -45,6 +45,21 @@ class MACDStrategy(AbstractStrategy):
         ]
 
     def action(self, data: pd.DataFrame, position: Position) -> Position:
+        close = data.iloc[-1].close
+
+        if position != Position.NONE:
+            if position == Position.LONG:
+                if close < self.stop_loss:
+                    return Position.NONE
+                if close > self.take_profit:
+                    return Position.NONE
+            if position == position.SHORT:
+                if close > self.stop_loss:
+                    return Position.NONE
+                if close < self.take_profit:
+                    return Position.NONE
+            return None
+            
         if data.shape[0] < self.long_period:
             return None
         df = data.copy()
@@ -62,23 +77,37 @@ class MACDStrategy(AbstractStrategy):
         # macd_last = macd.iloc[-1]
         # signal_last = signal.iloc[-1]
 
-        close = df.iloc[-1].close
 
         if (signal < macd):
-            if (macd - signal > 0 and macd < -self.threshold and prev_signal > prev_macd and close > trend):
+            if (macd - signal > 0 and macd < 0 and prev_signal > prev_macd and close > trend):
             # short_average.iloc[-1] < long_average.iloc[-1] and
             # short_average.tail(2).iloc[0] > long_average.tail(2).iloc[0] and
             # long_average.iloc[-1] < self.center.calculate(data=df.close).iloc[-1]
-                return Position.LONG if position != Position.LONG else None
+                res =  Position.LONG if position != Position.LONG else None
             else:
-                return None if position != Position.SHORT else Position.NONE
+                res = None if position != Position.SHORT else Position.NONE
         elif (macd < signal):
-            if (signal - macd > 0 and macd > self.threshold and prev_signal < prev_macd and close < trend):
+            if (signal - macd > 0 and macd > 0 and prev_signal < prev_macd and close < trend):
             # short_average.iloc[-1] > long_average.iloc[-1] and
             # short_average.tail(2).iloc[0] < long_average.tail(2).iloc[0] and
             # long_average.iloc[-1] > self.center.calculate(data=df.close).iloc[-1]
-                return Position.SHORT if position != Position.SHORT else None
+                res = Position.SHORT if position != Position.SHORT else None
             else:
-                return None if position != Position.LONG else Position.NONE
+                res = None if position != Position.LONG else Position.NONE
         
-        return Position.NONE if position != Position.NONE else None
+        # res = Position.NONE if position != Position.NONE else None
+        local_min = df.close.tail(self.long_period).min()
+        local_max = df.close.tail(self.long_period).max()
+        
+        if res == Position.LONG:
+            self.stop_loss = local_min
+            self.take_profit = local_max
+            if close - local_min > 2 * (local_max - close):
+                return None
+        elif res == Position.SHORT:
+            self.stop_loss = local_max
+            self.take_profit = local_min
+            if 2 * (close - local_min) < local_max - close:
+                return None
+            
+        return res

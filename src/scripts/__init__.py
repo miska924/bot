@@ -119,13 +119,15 @@ class Runner:
 
         def animate(ival, self, ax1, ax2, ax3):
             self.last = time.time()
-            for i in range(30):
+            for i in range(100):
                 if not self.client.next():
                     return
                 self._iterate()
                 self._update_balance()
 
             context = self.client.last(self.context_window)
+            if context.shape[0] < self.context_window:
+                return
 
             self._iterate_time += time.time() - self.last
 
@@ -172,11 +174,10 @@ class Runner:
             indicators = self.strategy.indicators(context)
             for indicator in indicators[0]:
                 ax3.plot(indicator)
-                
+
             for indicator in indicators[1]:
                 ax4.plot(indicator)
-                
-            
+
             self._render_time += time.time() - self.last
             # print(f"render: {self._render_time}")
             # print(f"iterate: {self._iterate_time}")
