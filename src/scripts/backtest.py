@@ -6,8 +6,10 @@ from src.clients.backtester_client import BacktesterClient
 from src.strategies.macd import MACDStrategy
 from src.strategies.nothing import NothingStrategy
 from src.strategies.reversals import ReversalsStrategy
+from src.strategies.support_resistance import SupportResistance
 
 from src.indicators.extremum import Max, Min
+from src.indicators.optimum import Support, Resistance
 
 
 def main(args):
@@ -16,15 +18,8 @@ def main(args):
 
     runner = Runner(
         context_window=args.context,
-        strategy_type=ReversalsStrategy,
-        strategy_args=dict(
-            indicators=[
-                Max(period=100, column="high"),
-                Min(period=100, column="low"),
-                Max(period=50, column="high"),
-                Min(period=50, column="low"),
-            ],
-        ),
+        strategy_type=SupportResistance,
+        strategy_args=dict(),
         client_type=BacktesterClient,
         client_args=dict(
             data=data,

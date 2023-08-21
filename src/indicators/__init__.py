@@ -5,10 +5,8 @@ class Indicator:
     def __init__(self):
         pass
 
-    def calculate(self, data: pd.DataFrame, **kwargs):
+    def calculate(self, data: pd.DataFrame):
         raise NotImplementedError
 
-
-class Divide(Indicator):
-    def __init__(self):
-        pass
+    def to_plot(self, data: pd.DataFrame):
+        return self.calculate(data=data)

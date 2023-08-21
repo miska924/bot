@@ -32,14 +32,10 @@ class ReversalsStrategy(AbstractStrategy):
         if position == Position.LONG:
             if close < self.stop_loss or close > self.take_profit:
                 return Position.NONE
-            if (close - self.stop_loss) * self.risk_reward > self.take_profit - close:
-                self.stop_loss = close - (self.take_profit - close) / self.risk_reward
             return None
         elif position == Position.SHORT:
             if close > self.stop_loss or close < self.take_profit:
                 return Position.NONE
-            if (self.stop_loss - close) * self.risk_reward > close - self.take_profit:
-                self.stop_loss = close + (close - self.take_profit) / self.risk_reward
             return None
 
         raise Exception(f"Do not know what to do with current position: {position}")
@@ -89,7 +85,6 @@ class ReversalsStrategy(AbstractStrategy):
             return self.in_position_action(data, position)
 
         if self.entry_position != None:
-            # print("waiting_entry")
             return self.waiting_entry(data)
 
         if data.shape[0] < 2:
@@ -98,28 +93,28 @@ class ReversalsStrategy(AbstractStrategy):
         last = data.iloc[-1]
         tail = data.iloc[: data.shape[0] - 1]
 
-        mn = tail.tail(self.window).low.min()
-        mn_idx = tail.tail(self.window).low.argmin()
-        mx = tail.tail(self.window).high.max()
-        mx_idx = tail.tail(self.window).high.argmax()
-
-        # mn_part = tail.tail(self.window // 2).low.min()
-        # mx_part = tail.tail(self.window // 2).high.max()
+        mn = Min(self.window, "low").calculate(tail).iloc[-1]
+        mx = Max(self.window, "high").calculate(tail).iloc[-1]
+        tail_peak_mn = (
+            tail.tail(self.peak_distance).head(self.peak_distance - 3).low.min()
+        )
+        tail_peak_mx = (
+            tail.tail(self.peak_distance).head(self.peak_distance - 3).high.max()
+        )
 
         if mn < last.low and last.high < mx:
             return None
 
         possible_position = None
 
-        if last.close < mn and 3 < self.window - mn_idx < self.peak_distance:
-            # print(mn_idx)
+        if last.close < mn and mn == tail_peak_mn:
             stop = last.low
-            take = last.open + (mx - last.open) * 1
+            take = mx
             possible_position = Position.LONG
 
-        if mx < last.close and 3 < self.window - mx_idx < self.peak_distance:
+        if mx < last.close and mx == tail_peak_mx:
             stop = last.high
-            take = last.open - (last.open - mn) * 1
+            take = mn
             possible_position = Position.SHORT
 
         if possible_position is not None:

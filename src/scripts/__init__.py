@@ -51,6 +51,7 @@ class Runner:
         long: float = 0.9,
         short: float = -0.9,
         animate: bool = True,
+        indicators=[],
     ):
         self.context_window = context_window
         self.client: AbstractClient = client_type(**client_args)
@@ -130,6 +131,8 @@ class Runner:
                 if idx % 1000 == 0:
                     save_plot(self.balance.index, [self.balance.balance], "res.png")
 
+        save_plot(self.balance.index, [self.balance.balance], "res.png")
+
 
 def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
     for i in range(100):
@@ -178,7 +181,7 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
         context_balance.index,
         context_balance.using,
     )
-    indicators = self.strategy.indicators(context)
+    indicators = self.strategy.to_plot(context)
     for indicator in indicators[0]:
         ax3.plot(indicator)
 

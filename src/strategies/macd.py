@@ -29,7 +29,7 @@ class MACDStrategy(AbstractStrategy):
         self.trend = EMA(self.trend_period)
         self.center = MA(long_period)
 
-    def indicators(self, data: pd.DataFrame) -> tuple[list, list]:
+    def to_plot(self, data: pd.DataFrame) -> tuple[list, list]:
         df = data.copy()
 
         long_average = self.long.calculate(df.close)

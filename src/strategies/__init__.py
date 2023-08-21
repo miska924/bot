@@ -12,7 +12,7 @@ class AbstractStrategy:
     def __init__(self):
         pass
 
-    def indicators(self) -> list:
+    def to_plot(self) -> list:
         raise NotImplementedError
 
     def action(self, data: pd.DataFrame, in_position: bool) -> Position:

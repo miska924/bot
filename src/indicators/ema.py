@@ -8,4 +8,7 @@ class EMA(Indicator):
         pass
 
     def calculate(self, data: pd.DataFrame):
+        return data.tail(self.period).ewm().mean()
+
+    def to_plot(self, data: pd.DataFrame):
         return data.ewm(span=self.period, adjust=False).mean()
