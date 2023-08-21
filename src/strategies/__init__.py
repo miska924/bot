@@ -11,7 +11,7 @@ class Position(Enum):
 class AbstractStrategy:
     def __init__(self):
         pass
-    
+
     def indicators(self) -> list:
         raise NotImplementedError
 

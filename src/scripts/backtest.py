@@ -21,12 +21,15 @@ def main(args):
             indicators=[
                 Max(period=100, column="high"),
                 Min(period=100, column="low"),
+                Max(period=50, column="high"),
+                Min(period=50, column="low"),
             ],
         ),
         client_type=BacktesterClient,
         client_args=dict(
             data=data,
         ),
+        animate=args.animate,
     )
 
     runner.run()
@@ -50,6 +53,7 @@ if __name__ == "__main__":
         default="macd",
         choices=["macd", "nothing"],
     )
+    parser.add_argument("-a", "--animate", dest="animate", action="store_true")
 
     args = parser.parse_args()
 

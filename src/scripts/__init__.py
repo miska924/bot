@@ -109,80 +109,78 @@ class Runner:
             )
 
     def run(self):
-        fig = mpf.figure(figsize=(10, 10))
-        ax1, ax2, ax3, ax4 = fig.subplots(
-            nrows=4,
-            ncols=1,
-            gridspec_kw={"height_ratios": [1, 1, 4, 1]},
-            sharex=True,
-        )
-
-        def animate(ival, self, ax1, ax2, ax3):
-            self.last = time.time()
-            for i in range(100):
-                if not self.client.next():
-                    return
+        if self.animate:
+            fig = mpf.figure(figsize=(10, 10))
+            ax1, ax2, ax3, ax4 = fig.subplots(
+                nrows=4,
+                ncols=1,
+                gridspec_kw={"height_ratios": [1, 1, 4, 1]},
+                sharex=True,
+            )
+            ani = animation.FuncAnimation(
+                fig, animate, fargs=(self, ax1, ax2, ax3, ax4), interval=100
+            )
+            mpf.show()
+        else:
+            idx = 1
+            while self.client.next():
+                idx += 1
                 self._iterate()
                 self._update_balance()
+                if idx % 1000 == 0:
+                    save_plot(self.balance.index, [self.balance.balance], "res.png")
 
-            context = self.client.last(self.context_window)
-            if context.shape[0] < self.context_window:
-                return
 
-            self._iterate_time += time.time() - self.last
+def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
+    for i in range(100):
+        if not self.client.next():
+            return
+        self._iterate()
+        self._update_balance()
 
-            self.last = time.time()
+    context = self.client.last(self.context_window)
 
-            ax1.clear()
-            ax2.clear()
-            ax3.clear()
-            ax4.clear()
+    ax1.clear()
+    ax2.clear()
+    ax3.clear()
+    ax4.clear()
 
-            mpf.plot(
-                context,
-                ax=ax3,
-                style="yahoo",
-                type="candle",
-                show_nontrading=True,
-            )
+    mpf.plot(
+        context,
+        ax=ax3,
+        style="yahoo",
+        type="candle",
+        show_nontrading=True,
+    )
 
-            for positions, marker, color in [
-                (self.short_positions, "v", "black"),
-                (self.long_positions, "^", "black"),
-                (self.zero_positions, ".", "gray"),
-            ]:
-                if positions is None:
-                    continue
-                context_positions = positions[positions.index >= context.index[0]]
-                ax3.scatter(
-                    context_positions.index,
-                    context_positions.value,
-                    marker=marker,
-                    color=color,
-                    s=100,
-                )
-
-            context_balance = self.balance[self.balance.index >= context.index[0]]
-            ax1.plot(
-                context_balance.index,
-                context_balance.balance,
-            )
-            ax2.plot(
-                context_balance.index,
-                context_balance.using,
-            )
-            indicators = self.strategy.indicators(context)
-            for indicator in indicators[0]:
-                ax3.plot(indicator)
-
-            for indicator in indicators[1]:
-                ax4.plot(indicator)
-
-            self._render_time += time.time() - self.last
-            # print(f"render: {self._render_time}")
-            # print(f"iterate: {self._iterate_time}")
-
-        ani = animation.FuncAnimation(
-            fig, animate, fargs=(self, ax1, ax2, ax3), interval=100
+    for positions, marker, color in [
+        (self.short_positions, "v", "black"),
+        (self.long_positions, "^", "black"),
+        (self.zero_positions, ".", "gray"),
+    ]:
+        if positions is None:
+            continue
+        context_positions = positions[positions.index >= context.index[0]]
+        ax3.scatter(
+            context_positions.index,
+            context_positions.value,
+            marker=marker,
+            color=color,
+            s=100,
         )
-        mpf.show()
+
+    context_balance = self.balance[self.balance.index >= context.index[0]]
+    ax1.plot(
+        context_balance.index,
+        context_balance.balance,
+    )
+    ax2.plot(
+        context_balance.index,
+        context_balance.using,
+    )
+    indicators = self.strategy.indicators(context)
+    for indicator in indicators[0]:
+        ax3.plot(indicator)
+
+    for indicator in indicators[1]:
+        ax4.plot(indicator)

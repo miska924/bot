@@ -10,7 +10,7 @@ class NothingStrategy(AbstractStrategy):
         indicators: list,
     ):
         self._indicators: list(Indicator) = indicators
-    
+
     def indicators(self, data: pd.DataFrame) -> tuple[list, list]:
         res: list[pd.DataFrame] = []
         for indicator in self._indicators:

@@ -9,7 +9,7 @@ import pandas as pd
 import math
 
 
-CANDLE_INTERPOLATION_STEPS = 30
+CANDLE_INTERPOLATION_STEPS = 12
 
 
 def emulate_candle(candle: pd.core.series.Series, progress: float):
