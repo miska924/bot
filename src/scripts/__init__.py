@@ -13,6 +13,8 @@ import mplfinance as mpf
 import matplotlib.animation as animation
 
 
+SKIP_ITERATIONS = 1
+
 def add_row(data: pd.DataFrame, index, row: dict):
     if data is None:
         tmp = pd.DataFrame(
@@ -135,7 +137,7 @@ class Runner:
 
 
 def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
-    for i in range(100):
+    for i in range(SKIP_ITERATIONS):
         if not self.client.next():
             return
         self._iterate()

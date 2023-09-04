@@ -10,6 +10,9 @@ from src.strategies.support_resistance import SupportResistance
 
 from src.indicators.extremum import Max, Min
 from src.indicators.optimum import Support, Resistance
+from src.indicators.imbalance import Imbalance
+from src.indicators.trend import Trend
+from src.indicators.liquidity import Liquidity
 
 
 def main(args):
@@ -18,8 +21,12 @@ def main(args):
 
     runner = Runner(
         context_window=args.context,
-        strategy_type=SupportResistance,
-        strategy_args=dict(),
+        strategy_type=NothingStrategy,
+        strategy_args=dict(indicators=[
+            Imbalance(),
+            Trend(),
+            Liquidity(),
+        ]),
         client_type=BacktesterClient,
         client_args=dict(
             data=data,

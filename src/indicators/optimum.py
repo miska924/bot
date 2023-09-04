@@ -25,6 +25,7 @@ def diff(a: pd.DataFrame, b: pd.DataFrame, opt_type: OptType, strict=False):
 
 
 def group(values, eps):
+    return values
     values = sorted(values)
     last_group = [values[0]]
     result = []
