@@ -15,7 +15,7 @@ class NothingStrategy(AbstractStrategy):
         res: list[pd.DataFrame] = []
         for indicator in self._indicators:
             tmp = indicator.to_plot(data)
-            if tmp is pd.DataFrame:
+            if type(tmp) == pd.DataFrame:
                 res.append(tmp)
             else:
                 res += tmp

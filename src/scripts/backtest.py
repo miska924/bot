@@ -13,6 +13,7 @@ from src.indicators.optimum import Support, Resistance
 from src.indicators.imbalance import Imbalance
 from src.indicators.trend import Trend
 from src.indicators.liquidity import Liquidity
+from src.indicators.candlestick import Hammer
 
 
 def main(args):
