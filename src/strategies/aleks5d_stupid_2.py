@@ -8,12 +8,12 @@ class Aleks5dStupid2(AbstractStrategy):
     def __init__(
         self,
         window: int = 10,
-        swap_disbalance: int = 3,
-        continue_disbalance: int = 9,
-        percentage: float = 0.0015,
+        swap_disbalance: int = 2,
+        continue_disbalance: int = 8,
+        percentage: float = 0.00001,
         alpha: float = 0.05,
-        profit: float = 1,
-        loss: float = 2,
+        profit: float = 0.1,
+        loss: float = 0.2,
     ):
         assert 0.0 <= alpha <= 100.0
         assert 0 < window
@@ -92,20 +92,30 @@ class Aleks5dStupid2(AbstractStrategy):
         close = data.iloc[-1].close
         print(position)
 
+        if position != Position.NONE:
+            try:
+                self.recalc()
+            except Exception as e:
+                print("Error!: ")
+                print(position)
+                print(e)
+                self.NONE()
+                return Position.NONE
         if position == Position.LONG:
-            self.recalc()
             if close < self.stop_loss or close > self.take_profit:
                 self.NONE()
                 return Position.NONE
             # return Position.LONG
         if position == Position.SHORT:
-            self.recalc()
             if close < self.take_profit or close > self.stop_loss:
                 self.NONE()
                 return Position.NONE
             # return Position.SHORT
 
         balance = self.calc_swap_plot(data).iloc[-1] 
+
+        print(balance)
+        print(data)
 
         if balance >= self.continue_disbalance:
             self.SHORT(close)

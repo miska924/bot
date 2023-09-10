@@ -30,6 +30,8 @@ class AbstractClient:
         price = self.price()
         balance = self.balance()
 
+        print(f"balance: {balance}")
+
         amount = balance["sum"] * using_part - balance[self.using] * price
         quantity = float(amount / price)
 
@@ -41,8 +43,6 @@ class AbstractClient:
         parts = quantity / self.min_qty
         parts = int(math.ceil(parts) if parts < 0 else math.floor(parts))
         quantity = float(parts * self.min_qty)
-
-
         self._order(
             quantity=quantity,
         )

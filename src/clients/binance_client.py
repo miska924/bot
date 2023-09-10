@@ -27,6 +27,7 @@ class BinanceClient(AbstractClient):
         self.api_key = api_key
         self.api_secret = api_secret
         self.client = Client(api_key, api_secret, testnet=testnet)
+        
 
         symbol_info = self.client.get_symbol_info(self.symbol)
         # logging.info(symbol_info)
@@ -81,7 +82,6 @@ class BinanceClient(AbstractClient):
         return data
 
     def _order(self, quantity: str) -> None:
-        print(quantity)
         try:
             if quantity < 0:
                 order = self.client.order_market_sell(
