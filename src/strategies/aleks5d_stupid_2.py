@@ -8,9 +8,9 @@ class Aleks5dStupid2(AbstractStrategy):
     def __init__(
         self,
         window: int = 10,
-        swap_disbalance: int = 2,
-        continue_disbalance: int = 8,
-        percentage: float = 0.00001,
+        swap_disbalance: int = 3,
+        continue_disbalance: int = 9,
+        percentage: float = 0.00002,
         alpha: float = 0.05,
         profit: float = 0.1,
         loss: float = 0.2,

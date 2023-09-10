@@ -52,8 +52,8 @@ class Runner:
         strategy_type: type,
         client_args: dict = dict(),
         strategy_args: dict = dict(),
-        long: float = 0.99,
-        short: float = 0.01,
+        long: float = 0.7,
+        short: float = 0.3,
         animate: bool = True,
         indicators=[],
     ):
