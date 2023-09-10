@@ -19,7 +19,6 @@ class BinanceClient(AbstractClient):
         using: str = "BTC",
         interval: str = "15m",
         testnet: bool = True,
-        stop: float = 0.01,
     ):
         self.using = using
         self.target = target
@@ -28,7 +27,6 @@ class BinanceClient(AbstractClient):
         self.api_key = api_key
         self.api_secret = api_secret
         self.client = Client(api_key, api_secret, testnet=testnet)
-        self.stop = stop
 
         symbol_info = self.client.get_symbol_info(self.symbol)
         # logging.info(symbol_info)
@@ -83,6 +81,7 @@ class BinanceClient(AbstractClient):
         return data
 
     def _order(self, quantity: str) -> None:
+        print(quantity)
         try:
             if quantity < 0:
                 order = self.client.order_market_sell(
@@ -92,7 +91,7 @@ class BinanceClient(AbstractClient):
             elif quantity > 0:
                 order = self.client.order_market_buy(
                     symbol=self.symbol,
-                    quantity=f"{+quantity:0.{self.precision}f}",
+                    quantity=f"{quantity:0.{self.precision}f}",
                 )
         except BinanceAPIException as e:
             logging.error(f"Ошибка при открытии позиции: {e}")

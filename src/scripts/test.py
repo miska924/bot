@@ -2,7 +2,7 @@ import argparse
 import pandas as pd
 
 from . import Runner
-from src.clients.backtester_client import BacktesterClient
+from src.clients.binance_client import BinanceClient
 from src.strategies.macd import MACDStrategy
 from src.strategies.nothing import NothingStrategy
 from src.strategies.reversals import ReversalsStrategy
@@ -18,16 +18,16 @@ from src.indicators.candlestick import Hammer
 
 
 def main(args):
-    data = pd.read_csv(args.filename, index_col=0)
-    data.index = pd.to_datetime(data.index)
-
     runner = Runner(
         context_window=args.context,
         strategy_type=Aleks5dStupid2,
         strategy_args=dict(),
-        client_type=BacktesterClient,
+        client_type=BinanceClient,
         client_args=dict(
-            data=data,
+            api_key=args.token,
+            api_secret=args.secret,
+            testnet=True,
+            interval='1m',
         ),
         animate=args.animate,
     )
@@ -37,23 +37,15 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="BackTest",
-        description="Test strategy using historical data",
+        prog="Run",
+        description="Run strategy",
     )
 
-    parser.add_argument(
-        "-f", "--filename", dest="filename", type=str, default="data.csv"
-    )
     parser.add_argument("-c", "--context", dest="context", type=int, default=200)
-    parser.add_argument(
-        "-s",
-        "--strategy",
-        dest="strategy",
-        type=str,
-        default="macd",
-        choices=["macd", "nothing"],
-    )
     parser.add_argument("-a", "--animate", dest="animate", action="store_true")
+
+    parser.add_argument("-t", "--token", dest="token", type=str, required=True)
+    parser.add_argument("-s", "--secret", dest="secret", type=str, required=True)
 
     args = parser.parse_args()
 

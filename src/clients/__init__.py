@@ -42,8 +42,9 @@ class AbstractClient:
         parts = int(math.ceil(parts) if parts < 0 else math.floor(parts))
         quantity = float(parts * self.min_qty)
 
+
         self._order(
-            quantity=f"{quantity:0.{self.precision}f}",
+            quantity=quantity,
         )
         # self.last_price = price
 

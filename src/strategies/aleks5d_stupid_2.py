@@ -90,6 +90,7 @@ class Aleks5dStupid2(AbstractStrategy):
 
     def action(self, data: pd.DataFrame, position: Position) -> Position:
         close = data.iloc[-1].close
+        print(position)
 
         if position == Position.LONG:
             self.recalc()

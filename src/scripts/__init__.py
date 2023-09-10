@@ -21,6 +21,8 @@ def add_row(data: pd.DataFrame, index, row: dict):
             [row],
         )
         tmp.index = (index,)
+        print(index)
+        print(type(index))
         return tmp
 
     data.loc[index] = row
@@ -112,6 +114,7 @@ class Runner:
             )
 
     def run(self):
+        self.client.set_using_part(0)
         if self.animate:
             fig = mpf.figure(figsize=(10, 10))
             ax1, ax2, ax3, ax4 = fig.subplots(
@@ -130,13 +133,14 @@ class Runner:
                 idx += 1
                 self._iterate()
                 self._update_balance()
-                if idx % 1000 == 0:
+                if idx % 1 == 0:
                     save_plot(self.balance.index, [self.balance.balance], "res.png")
 
         save_plot(self.balance.index, [self.balance.balance], "res.png")
 
 
 def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
+    print("in")
     for i in range(SKIP_ITERATIONS):
         if not self.client.next():
             return
@@ -158,21 +162,29 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
         show_nontrading=True,
     )
 
-    for positions, marker, color in [
-        (self.short_positions, "v", "black"),
-        (self.long_positions, "^", "black"),
-        (self.zero_positions, ".", "gray"),
-    ]:
-        if positions is None:
-            continue
-        context_positions = positions[positions.index >= context.index[0]]
-        ax3.scatter(
-            context_positions.index,
-            context_positions.value,
-            marker=marker,
-            color=color,
-            s=100,
-        )
+    print("mid")
+
+    # for positions, marker, color in [
+    #     (self.short_positions, "v", "black"),
+    #     (self.long_positions, "^", "black"),
+    #     (self.zero_positions, ".", "gray"),
+    # ]:
+    #     if positions is None:
+    #         continue
+    #     print("positions")
+    #     print(positions.info())
+    #     print("context")
+    #     print(context.info())
+    #     context_positions = positions[positions.index > context.index[0]]
+    #     ax3.scatter(
+    #         context_positions.index,
+    #         context_positions.value,
+    #         marker=marker,
+    #         color=color,
+    #         s=100,
+    #     )
+
+    print("mid")
 
     context_balance = self.balance[self.balance.index >= context.index[0]]
     ax1.plot(
@@ -189,3 +201,5 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
 
     for indicator in indicators[1]:
         ax4.plot(indicator)
+    
+    print("out")
