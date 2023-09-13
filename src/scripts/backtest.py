@@ -5,6 +5,9 @@ from . import Runner
 from src.clients.backtester_client import BacktesterClient
 from src.strategies.macd import MACDStrategy
 from src.strategies.nothing import NothingStrategy
+from src.strategies.aleks5d_stupid import Aleks5dStupid
+from src.strategies.aleks5d_stupid_2 import Aleks5dStupid2
+from src.strategies.aleks5d_stupid_3 import Aleks5dStupid3
 from src.strategies.reversals import ReversalsStrategy
 from src.strategies.support_resistance import SupportResistance
 from src.strategies.aleks5d_stupid_2 import Aleks5dStupid2
@@ -45,14 +48,6 @@ if __name__ == "__main__":
         "-f", "--filename", dest="filename", type=str, default="data.csv"
     )
     parser.add_argument("-c", "--context", dest="context", type=int, default=200)
-    parser.add_argument(
-        "-s",
-        "--strategy",
-        dest="strategy",
-        type=str,
-        default="macd",
-        choices=["macd", "nothing"],
-    )
     parser.add_argument("-a", "--animate", dest="animate", action="store_true")
 
     args = parser.parse_args()

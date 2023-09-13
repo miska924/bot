@@ -52,8 +52,8 @@ class Runner:
         strategy_type: type,
         client_args: dict = dict(),
         strategy_args: dict = dict(),
-        long: float = 0.9,
-        short: float = -0.9,
+        long: float = 0.7,
+        short: float = 0.3,
         animate: bool = True,
         indicators=[],
     ):
@@ -74,6 +74,8 @@ class Runner:
         self._iterate_time = 0
         self._render_time = 0
 
+        self.aboba = Position.NONE
+
     def _update_balance(self):
         balance = self.client.balance()
         self.balance = add_row(
@@ -87,7 +89,10 @@ class Runner:
 
     def _iterate(self):
         data: pd.DataFrame = self.client.last(self.context_window)
-        action: Position = self.strategy.action(data, self.client.position())
+        action: Position = self.strategy.action(data, self.aboba)
+        self.aboba = action
+
+        print(f"After action: {action}")
 
         if action == Position.LONG:
             self.client.set_using_part(self.long)
@@ -106,7 +111,7 @@ class Runner:
             )
 
         if action == Position.NONE:
-            self.client.set_using_part(0)
+            self.client.set_using_part(0.5)
             self.zero_positions = add_row(
                 data=self.zero_positions,
                 index=self.client.time(),
@@ -114,7 +119,7 @@ class Runner:
             )
 
     def run(self):
-        self.client.set_using_part(0)
+        self.client.set_using_part(0.5)
         if self.animate:
             fig = mpf.figure(figsize=(10, 10))
             ax1, ax2, ax3, ax4 = fig.subplots(
