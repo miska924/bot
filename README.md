@@ -1,6 +1,10 @@
 # Crypto Trading Bot
 Algorithmic trading bot speculating using crypto currency.
 
-## USM draft
+## USM
 
-![USM](USM.jpg)
+![USM](USM_1.jpg)
+
+## First profitable strategy backtest
+
+![money](res_profitable.png)
