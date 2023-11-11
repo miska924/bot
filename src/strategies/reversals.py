@@ -123,7 +123,7 @@ class ReversalsStrategy(AbstractStrategy):
                 return None
 
             if possible_position is not None:
-                print(possible_position, last.open)
+                # print(possible_position, last.open)
                 self.entry_position = possible_position
                 self.entry = last.open
 

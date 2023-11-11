@@ -15,6 +15,7 @@ from src.indicators.imbalance import Imbalance
 from src.indicators.trend import Trend
 from src.indicators.liquidity import Liquidity
 from src.indicators.candlestick import Hammer
+from src.indicators.pattern import Patterns
 
 
 def main(args):

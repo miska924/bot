@@ -15,14 +15,15 @@ import matplotlib.animation as animation
 
 SKIP_ITERATIONS = 1
 
+
 def add_row(data: pd.DataFrame, index, row: dict):
     if data is None:
         tmp = pd.DataFrame(
             [row],
         )
         tmp.index = (index,)
-        print(index)
-        print(type(index))
+        # print(index)
+        # print(type(index))
         return tmp
 
     data.loc[index] = row
@@ -133,14 +134,14 @@ class Runner:
                 idx += 1
                 self._iterate()
                 self._update_balance()
-                if idx % 1 == 0:
+                if idx % 100 == 0:
                     save_plot(self.balance.index, [self.balance.balance], "res.png")
 
         save_plot(self.balance.index, [self.balance.balance], "res.png")
 
 
 def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
-    print("in")
+    # print("in")
     for i in range(SKIP_ITERATIONS):
         if not self.client.next():
             return
@@ -162,7 +163,7 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
         show_nontrading=True,
     )
 
-    print("mid")
+    # print("mid")
 
     # for positions, marker, color in [
     #     (self.short_positions, "v", "black"),
@@ -184,7 +185,7 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
     #         s=100,
     #     )
 
-    print("mid")
+    # print("mid")
 
     context_balance = self.balance[self.balance.index >= context.index[0]]
     ax1.plot(
@@ -201,5 +202,5 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
 
     for indicator in indicators[1]:
         ax4.plot(indicator)
-    
-    print("out")
+
+    # print("out")

@@ -25,7 +25,7 @@ class Aleks5dStupid2(AbstractStrategy):
         self.swap_disbalance = swap_disbalance
         self.continue_disbalance = continue_disbalance
         self.window = window
-        
+
         self.stop_loss_df = None
         self.take_profit_df = None
         self.take_profit = None
@@ -41,30 +41,35 @@ class Aleks5dStupid2(AbstractStrategy):
                 return -1
             return 1
 
-        return data.close.rolling(window=2).apply(
-                    lambda x: f(x)
-                ).rolling(window=self.window).apply(
-                    lambda x: x.sum()
-                )
-
+        return (
+            data.close.rolling(window=2)
+            .apply(lambda x: f(x))
+            .rolling(window=self.window)
+            .apply(lambda x: x.sum())
+        )
 
     def to_plot(self, data: pd.DataFrame) -> tuple[list, list]:
         if self.stop_loss_df is None:
             self.stop_loss_df = data.copy().close
             self.take_profit_df = data.copy().close
         else:
-            self.stop_loss_df = pd.concat([self.stop_loss_df, pd.Series([data.close.iloc[-1]], index=[data.index[-1]])])
-            self.take_profit_df = pd.concat([self.take_profit_df, pd.Series([data.close.iloc[-1]], index=[data.index[-1]])])
+            self.stop_loss_df = pd.concat(
+                [
+                    self.stop_loss_df,
+                    pd.Series([data.close.iloc[-1]], index=[data.index[-1]]),
+                ]
+            )
+            self.take_profit_df = pd.concat(
+                [
+                    self.take_profit_df,
+                    pd.Series([data.close.iloc[-1]], index=[data.index[-1]]),
+                ]
+            )
         if self.stop_loss is not None:
             self.stop_loss_df.iloc[-1] = self.stop_loss
             self.take_profit_df.iloc[-1] = self.take_profit
-        return [
-            self.stop_loss_df,
-            self.take_profit_df
-        ], [
-            self.calc_swap_plot(data)
-        ]
-    
+        return [self.stop_loss_df, self.take_profit_df], [self.calc_swap_plot(data)]
+
     def recalc(self):
         if self.stop_loss < self.take_profit:
             self.stop_loss += self.init_percent * self.alpha
@@ -72,17 +77,17 @@ class Aleks5dStupid2(AbstractStrategy):
         else:
             self.stop_loss -= self.init_percent * self.alpha
             self.take_profit += self.init_percent * self.alpha
-    
+
     def LONG(self, close):
         self.take_profit = close * (100 + self.profit) / 100
         self.stop_loss = close * (100 - self.loss) / 100
         self.init_percent = close / 100
-    
+
     def SHORT(self, close):
         self.take_profit = close * (100 - self.profit) / 100
         self.stop_loss = close * (100 + self.loss) / 100
         self.init_percent = close / 100
-    
+
     def NONE(self):
         self.take_profit = None
         self.stop_loss = None
@@ -90,7 +95,7 @@ class Aleks5dStupid2(AbstractStrategy):
 
     def action(self, data: pd.DataFrame, position: Position) -> Position:
         close = data.iloc[-1].close
-        print(position)
+        # print(position)
 
         if position == Position.LONG:
             self.recalc()
@@ -105,7 +110,7 @@ class Aleks5dStupid2(AbstractStrategy):
                 return Position.NONE
             # return Position.SHORT
 
-        balance = self.calc_swap_plot(data).iloc[-1] 
+        balance = self.calc_swap_plot(data).iloc[-1]
 
         if balance >= self.continue_disbalance:
             self.SHORT(close)
@@ -121,4 +126,3 @@ class Aleks5dStupid2(AbstractStrategy):
             return Position.SHORT
 
         return position
-        
