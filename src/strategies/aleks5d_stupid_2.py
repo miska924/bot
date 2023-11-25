@@ -68,7 +68,13 @@ class Aleks5dStupid2(AbstractStrategy):
         if self.stop_loss is not None:
             self.stop_loss_df.iloc[-1] = self.stop_loss
             self.take_profit_df.iloc[-1] = self.take_profit
-        return [self.stop_loss_df, self.take_profit_df], [self.calc_swap_plot(data)]
+        return (
+            [
+                df[df.index >= data.index[0]]
+                for df in [self.stop_loss_df, self.take_profit_df]
+            ],
+            [self.calc_swap_plot(data)],
+        )
 
     def recalc(self):
         if self.stop_loss < self.take_profit:
@@ -95,7 +101,14 @@ class Aleks5dStupid2(AbstractStrategy):
 
     def action(self, data: pd.DataFrame, position: Position) -> Position:
         close = data.iloc[-1].close
-        # print(position)
+
+        if (
+            position != Position.NONE
+            and self.stop_loss is None
+            and self.take_profit is None
+        ):
+            position = Position.NONE
+        print(position)
 
         if position == Position.LONG:
             self.recalc()

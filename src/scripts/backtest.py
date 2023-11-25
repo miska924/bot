@@ -8,6 +8,7 @@ from src.strategies.nothing import NothingStrategy
 from src.strategies.reversals import ReversalsStrategy
 from src.strategies.support_resistance import SupportResistance
 from src.strategies.aleks5d_stupid_2 import Aleks5dStupid2
+from src.strategies import Combination
 
 from src.indicators.extremum import Max, Min
 from src.indicators.optimum import Support, Resistance
@@ -31,6 +32,7 @@ def main(args):
             data=data,
         ),
         animate=args.animate,
+        backtest=True,
     )
 
     runner.run()

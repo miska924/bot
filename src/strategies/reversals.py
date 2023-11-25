@@ -93,8 +93,8 @@ class ReversalsStrategy(AbstractStrategy):
         last = data.iloc[-1]
         tail = data.iloc[: data.shape[0] - 1]
 
-        mn = Min(self.window, "low").calculate(tail).iloc[-1]
-        mx = Max(self.window, "high").calculate(tail).iloc[-1]
+        mn = Min(self.window, "low").calculate(tail)
+        mx = Max(self.window, "high").calculate(tail)
         tail_peak_mn = (
             tail.tail(self.peak_distance).head(self.peak_distance - 3).low.min()
         )

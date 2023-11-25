@@ -57,6 +57,7 @@ class Runner:
         short: float = -0.9,
         animate: bool = True,
         indicators=[],
+        backtest=False,
     ):
         self.context_window = context_window
         self.client: AbstractClient = client_type(**client_args)
@@ -65,6 +66,8 @@ class Runner:
         self.long: float = long
         self.short: float = short
         self.animate: bool = animate
+
+        self.backtest = backtest
 
         self.balance: pd.DataFrame = None
 
@@ -79,7 +82,7 @@ class Runner:
         balance = self.client.balance()
         self.balance = add_row(
             data=self.balance,
-            index=self.client.time(),
+            index=pd.Timestamp.fromtimestamp(self.client.time().timestamp()),
             row=dict(
                 balance=balance["sum"],
                 using=balance[self.client.get_using()],
@@ -125,7 +128,11 @@ class Runner:
                 sharex=True,
             )
             ani = animation.FuncAnimation(
-                fig, animate, fargs=(self, ax1, ax2, ax3, ax4), interval=100
+                fig,
+                animate,
+                fargs=(self, ax1, ax2, ax3, ax4),
+                interval=100,
+                cache_frame_data=False,
             )
             mpf.show()
         else:
@@ -142,7 +149,7 @@ class Runner:
 
 def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
     # print("in")
-    for i in range(SKIP_ITERATIONS):
+    for i in range(SKIP_ITERATIONS * (1 + int(not self.backtest) * 29)):
         if not self.client.next():
             return
         self._iterate()
@@ -188,10 +195,7 @@ def animate(ival, self: Runner, ax1, ax2, ax3, ax4):
     # print("mid")
 
     context_balance = self.balance[self.balance.index >= context.index[0]]
-    ax1.plot(
-        context_balance.index,
-        context_balance.balance,
-    )
+    ax1.plot(context_balance.index, context_balance.balance)
     ax2.plot(
         context_balance.index,
         context_balance.using,

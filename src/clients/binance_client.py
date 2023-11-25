@@ -80,7 +80,7 @@ class BinanceClient(AbstractClient):
 
         return data
 
-    def _order(self, quantity: str) -> None:
+    def _order(self, quantity: float) -> None:
         # print(quantity)
         try:
             if quantity < 0:

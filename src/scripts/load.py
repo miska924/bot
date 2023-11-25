@@ -54,7 +54,7 @@ if __name__ == "__main__":
         dest="interval",
         type=str,
         default="15m",
-        choices=["15m", "1h", "30m", "1s", "1d"],
+        choices=["15m", "1h", "30m", "1s", "1d", "1m"],
     )
 
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)

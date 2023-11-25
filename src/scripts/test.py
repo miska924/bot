@@ -26,12 +26,11 @@ def main(args):
         client_args=dict(
             api_key=args.token,
             api_secret=args.secret,
-            testnet=True,
-            interval='1m',
+            testnet=False,
+            interval="1m",
         ),
         animate=args.animate,
     )
-
     runner.run()
 
 
