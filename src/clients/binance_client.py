@@ -8,6 +8,19 @@ import datetime as dt
 import pandas as pd
 import math
 from pytimeparse.timeparse import timeparse
+import requests
+import os
+import json
+
+
+def telegram_bot_sendtext(bot_message):
+   bot_token = os.getenv('TRADE_NOTIFIER_TOKEN')
+   bot_chatID = os.getenv('TRADE_NOTIFIER_CHAT_ID')
+   send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
+
+   response = requests.get(send_text)
+
+   return response.json()
 
 
 class BinanceClient(AbstractClient):
@@ -93,11 +106,16 @@ class BinanceClient(AbstractClient):
                     symbol=self.symbol,
                     quantity=f"{quantity:0.{self.precision}f}",
                 )
+            telegram_bot_sendtext(json.dumps(self.balance(), indent=2))
         except BinanceAPIException as e:
-            logging.error(f"Ошибка при открытии позиции: {e}")
+            error = f"Ошибка при открытии позиции: {e}"
+            logging.error(error)
+            telegram_bot_sendtext(error)
 
         except BinanceOrderException as e:
-            logging.error(f"Ошибка создания ордера: {e}")
+            error = f"Ошибка создания ордера: {e}"
+            logging.error(error)
+            telegram_bot_sendtext(error)
 
     def price(self):
         try:

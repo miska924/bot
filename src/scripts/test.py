@@ -26,8 +26,10 @@ def main(args):
         client_args=dict(
             api_key=args.token,
             api_secret=args.secret,
+            # tg_token=args.tg_token,
+            # tg_chat_id=args.tg_chat_id,
             testnet=False,
-            interval="1m",
+            interval="15m",
         ),
         animate=args.animate,
     )
@@ -45,6 +47,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
     parser.add_argument("-s", "--secret", dest="secret", type=str, required=True)
+    
+    # parser.add_argument("--tg-token", dest="tg_token", type=str, required=True)
+    # parser.add_argument("--tg-chat-id", dest="tg_chat_id", type=str, required=True)
 
     args = parser.parse_args()
 
