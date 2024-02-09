@@ -49,6 +49,7 @@ class BinanceClient(AbstractClient):
         self.max_notional = float(symbol_info["filters"][6]["maxNotional"])
         # self.max_leverage = self.client.get_max_margin_loan(asset=self.using)
         # logging.info(self.max_leverage)
+        telegram_bot_sendtext("Started")
 
     def last(self, count: int, offset: int = 0, time: dt.datetime = None):
         window_timedelta = dt.timedelta(seconds=timeparse(self.interval)) * (count + 1)
